@@ -1,0 +1,17 @@
+[package]
+name = "stm32f103xx-usb"
+version = "0.1.0"
+authors = ["Matti Virkkunen <mvirkkunen@gmail.com>"]
+
+[dependencies]
+cortex-m = "0.5.4"
+stm32f103xx = "0.10.0"
+# TODO: this fork is used temporarily to be able to set USB clocks correctly in the examples
+stm32f103xx-hal = { git = "https://github.com/mvirkkunen/stm32f103xx-hal", rev = "c01b217e8a8fa85753bae8c3e4121735ee624be6" }
+vcell = "0.1.0"
+usb-device = { git = "https://github.com/mvirkkunen/usb-device" }
+
+[dev-dependencies]
+cortex-m-rt = "0.5.2"
+panic-semihosting = "0.3.0"
+nb = "0.1.1"
