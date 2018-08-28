@@ -162,7 +162,7 @@ impl ::usb_device::UsbBus for UsbBus {
             _ => {},
         };
 
-        let pmem = self.packet_mem.borrow_mut();
+        let pmem = self.packet_mem.borrow();
         let bd = &pmem.descrs()[ep as usize];
 
         // TODO: validate len
@@ -194,7 +194,7 @@ impl ::usb_device::UsbBus for UsbBus {
             return Err(UsbError::NoData);
         }
 
-        let pmem = self.packet_mem.borrow_mut();
+        let pmem = self.packet_mem.borrow();
         let bd = &pmem.descrs()[ep as usize];
 
         let count = bd.count_rx.get() & 0x3f;
