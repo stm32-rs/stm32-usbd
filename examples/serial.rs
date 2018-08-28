@@ -29,7 +29,7 @@ mod cdc_acm {
     use usb_device::class::{UsbClass, ControlOutResult, DescriptorWriter};
     use usb_device::control::*;
 
-    const USB_CLASS_CDC: u8 = 0x02;
+    pub const USB_CLASS_CDC: u8 = 0x02;
     const USB_CLASS_DATA: u8 = 0x0a;
     const CDC_SUBCLASS_ACM: u8 = 0x02;
     const CDC_PROTOCOL_AT: u8 = 0x01;
@@ -120,23 +120,16 @@ mod cdc_acm {
         }
 
         fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
+            let data_if = writer.alloc_interface();
+            let comm_if = writer.alloc_interface();
+
             // TODO: make a better DescriptorWriter to make it harder to make invalid descriptors
-            let data_if = writer.interface(
-                2,
-                USB_CLASS_DATA,
-                0x00,
-                0x00)?;
-
-            writer.endpoint(&self.write_ep)?;
-            writer.endpoint(&self.read_ep)?;
-
-            let comm_if = writer.interface(
+            writer.interface(
+                comm_if,
                 1,
                 USB_CLASS_CDC,
                 CDC_SUBCLASS_ACM,
                 CDC_PROTOCOL_AT)?;
-
-            writer.endpoint(&self.comm_ep)?;
 
             writer.write(
                 CS_INTERFACE,
@@ -144,7 +137,7 @@ mod cdc_acm {
 
             writer.write(
                 CS_INTERFACE,
-                &[CDC_TYPE_CALL_MANAGEMENT, 0x00, data_if])?;
+                &[CDC_TYPE_CALL_MANAGEMENT, 0x00, data_if.into()])?;
 
             writer.write(
                 CS_INTERFACE,
@@ -152,7 +145,19 @@ mod cdc_acm {
 
             writer.write(
                 CS_INTERFACE,
-                &[CDC_TYPE_UNION, comm_if, data_if])?;
+                &[CDC_TYPE_UNION, comm_if.into(), data_if.into()])?;
+
+            writer.endpoint(&self.comm_ep)?;
+
+            writer.interface(
+                data_if,
+                2,
+                USB_CLASS_DATA,
+                0x00,
+                0x00)?;
+
+            writer.endpoint(&self.write_ep)?;
+            writer.endpoint(&self.read_ep)?;
 
             Ok(())
         }
@@ -214,6 +219,7 @@ fn main() -> ! {
         manufacturer: "Fake company",
         product: "Serial port",
         serial_number: "TEST",
+        device_class: cdc_acm::USB_CLASS_CDC,
         ..usb_device::UsbDeviceInfo::new(0x5824, 0x27dd)
     };
 
