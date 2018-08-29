@@ -4,7 +4,9 @@ use usb_device::bus::{EndpointAllocator, PollResult};
 use usb_device::endpoint::{EndpointDirection, EndpointType};
 use cortex_m::asm::delay;
 use stm32f103xx::{USB, usb};
-use stm32f103xx_hal::rcc::APB1;
+use stm32f103xx_hal::prelude::*;
+use stm32f103xx_hal::rcc;
+use stm32f103xx_hal::gpio::{self, gpioa};
 use regs::{NUM_ENDPOINTS, PacketMemory, EpReg, EndpointStatus, calculate_count_rx};
 
 #[derive(Default)]
@@ -22,9 +24,10 @@ pub struct UsbBus {
 }
 
 impl UsbBus {
-    pub fn usb(regs: USB, apb1: &mut APB1) -> UsbBus {
+    pub fn usb(regs: USB, apb1: &mut rcc::APB1) -> UsbBus {
         // TODO: apb1.enr is not public, figure out how this should really interact with the HAL
         // crate
+
         let _ = apb1;
         ::cortex_m::interrupt::free(|_| {
             let dp = unsafe { ::stm32f103xx::Peripherals::steal() };
@@ -36,6 +39,16 @@ impl UsbBus {
             packet_mem: RefCell::new(PacketMemory::new()),
             max_endpoint: Cell::new(None),
             endpoints: RefCell::default(),
+        }
+    }
+
+    pub fn resetter<'a, M>(&'a self,
+        clocks: &rcc::Clocks, crh: &mut gpioa::CRH, pa12: gpioa::PA12<M>) -> UsbBusResetter<'a>
+    {
+        UsbBusResetter {
+            bus: self,
+            delay: clocks.sysclk().0,
+            pa12: pa12.into_push_pull_output(crh),
         }
     }
 
@@ -288,5 +301,23 @@ impl ::usb_device::bus::UsbBus for UsbBus {
                 reg.set_stat_rx(EndpointStatus::Valid);
             }
         }
+    }
+}
+
+pub struct UsbBusResetter<'a> {
+    bus: &'a UsbBus,
+    delay: u32,
+    pa12: gpioa::PA12<gpio::Output<gpio::PushPull>>,
+}
+
+impl<'a> UsbBusResetter<'a> {
+    pub fn reset(&mut self) {
+        let pdwn = self.bus.regs.cntr.read().pdwn().bit_is_set();
+        self.bus.regs.cntr.modify(|_, w| w.pdwn().set_bit());
+
+        self.pa12.set_low();
+        delay(self.delay);
+
+        self.bus.regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));
     }
 }

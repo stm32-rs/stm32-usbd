@@ -6,14 +6,11 @@ extern crate cortex_m;
 extern crate cortex_m_rt as rt;
 extern crate panic_semihosting;
 extern crate stm32f103xx_hal as hal;
-#[macro_use(block)]
-extern crate nb;
 extern crate usb_device;
 extern crate stm32f103xx_usb;
 
 use hal::prelude::*;
 use hal::stm32f103xx;
-use hal::timer::Timer;
 use rt::ExceptionFrame;
 
 use usb_device::prelude::*;
@@ -67,7 +64,6 @@ mod example {
 
 entry!(main);
 fn main() -> ! {
-    let cp = cortex_m::Peripherals::take().unwrap();
     let dp = stm32f103xx::Peripherals::take().unwrap();
 
     let mut flash = dp.FLASH.constrain();
@@ -86,16 +82,8 @@ fn main() -> ! {
 
     let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
 
-    let mut timer = Timer::syst(cp.SYST, 10.hz(), clocks);
-
-    // Hack to simulate USB reset
-    let mut pa12 = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
-    pa12.set_low();
-    for _ in 1..30 {
-        block!(timer.wait()).unwrap();
-    }
-
     let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
+    usb_bus.resetter(&clocks, &mut gpioa.crh, gpioa.pa12).reset();
 
     let custom = example::CustomClass::new();
 
