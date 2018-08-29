@@ -54,7 +54,7 @@ mod example {
         fn control_out(&self, req: &Request, buf: &[u8]) -> ControlOutResult {
             if req.request_type == RequestType::Vendor && req.recipient == Recipient::Device
             {
-                self.value.set(Some(req.value));
+                self.value.set(Some(req.value as u8));
                 ControlOutResult::Ok
             } else {
                 ControlOutResult::Ignore
@@ -72,6 +72,7 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
 
     let clocks = rcc.cfgr
+        .hse(8.mhz())
         .sysclk(48.mhz())
         .pclk1(24.mhz())
         .freeze(&mut flash.acr);
