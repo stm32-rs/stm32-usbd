@@ -15,19 +15,16 @@ use hal::prelude::*;
 use hal::stm32f103xx;
 use hal::timer::Timer;
 use rt::ExceptionFrame;
+
+use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
 
 // Minimal CDC-ACM implementation
 mod cdc_acm {
     use core::cell::RefCell;
     use core::cmp::min;
-    use usb_device::{
-        Result, UsbError,
-        UsbBus, EndpointAllocator,
-        EndpointIn, EndpointOut
-    };
-    use usb_device::class::{UsbClass, ControlOutResult, DescriptorWriter};
-    use usb_device::control::*;
+    use usb_device::class_prelude::*;
+    use usb_device::Result;
 
     pub const USB_CLASS_CDC: u8 = 0x02;
     const USB_CLASS_DATA: u8 = 0x0a;
@@ -149,10 +146,12 @@ mod cdc_acm {
             Ok(())
         }
 
-        fn control_out(&self, req: &Request, buf: &[u8]) -> ControlOutResult {
+        fn control_out(&self, req: &control::Request, buf: &[u8]) -> ControlOutResult {
             let _ = buf;
 
-            if req.request_type == RequestType::Class && req.recipient == Recipient::Interface {
+            if req.request_type == control::RequestType::Class
+                && req.recipient == control::Recipient::Interface
+            {
                 return match req.request {
                     REQ_SET_LINE_CODING => ControlOutResult::Ok,
                     REQ_SET_CONTROL_LINE_STATE => ControlOutResult::Ok,
@@ -201,20 +200,20 @@ fn main() -> ! {
 
     let serial = cdc_acm::SerialPort::new(&usb_bus.endpoints());
 
-    let usb_dev_info = usb_device::UsbDeviceInfo {
+    let usb_dev_info = UsbDeviceInfo {
         manufacturer: "Fake company",
         product: "Serial port",
         serial_number: "TEST",
         device_class: cdc_acm::USB_CLASS_CDC,
-        ..usb_device::UsbDeviceInfo::new(0x5824, 0x27dd)
+        ..UsbDeviceInfo::new(0x5824, 0x27dd)
     };
 
-    let usb_dev = usb_device::UsbDevice::new(&usb_bus, usb_dev_info, &[&serial]);
+    let usb_dev = UsbDevice::new(&usb_bus, usb_dev_info, &[&serial]);
 
     loop {
         usb_dev.poll();
 
-        if usb_dev.state() == usb_device::DeviceState::Configured {
+        if usb_dev.state() == UsbDeviceState::Configured {
             let mut buf = [0u8; 8];
 
             match serial.read(&mut buf) {

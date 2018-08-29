@@ -15,12 +15,13 @@ use hal::prelude::*;
 use hal::stm32f103xx;
 use hal::timer::Timer;
 use rt::ExceptionFrame;
+
+use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
 
 mod example {
     use core::cell::Cell;
-    use usb_device::class::{UsbClass, ControlOutResult, ControlInResult};
-    use usb_device::control::*;
+    use usb_device::class_prelude::*;
 
     pub struct CustomClass {
         value: Cell<Option<u8>>,
@@ -39,9 +40,9 @@ mod example {
     }
 
     impl UsbClass for CustomClass {
-        fn control_in(&self, req: &Request, buf: &mut [u8]) -> ControlInResult {
-            if req.request_type == RequestType::Vendor
-                && req.recipient == Recipient::Device
+        fn control_in(&self, req: &control::Request, buf: &mut [u8]) -> ControlInResult {
+            if req.request_type == control::RequestType::Vendor
+                && req.recipient == control::Recipient::Device
                 && req.length >= 2
             {
                 buf[..2].copy_from_slice(&[0x13, 0x37]);
@@ -51,8 +52,9 @@ mod example {
             }
         }
 
-        fn control_out(&self, req: &Request, buf: &[u8]) -> ControlOutResult {
-            if req.request_type == RequestType::Vendor && req.recipient == Recipient::Device
+        fn control_out(&self, req: &control::Request, _buf: &[u8]) -> ControlOutResult {
+            if req.request_type == control::RequestType::Vendor
+                && req.recipient == control::Recipient::Device
             {
                 self.value.set(Some(req.value as u8));
                 ControlOutResult::Ok
@@ -97,13 +99,13 @@ fn main() -> ! {
 
     let custom = example::CustomClass::new();
 
-    let usb_dev_info = usb_device::UsbDeviceInfo {
+    let usb_dev_info = UsbDeviceInfo {
         manufacturer: "Fake company",
         product: "My device",
-        ..usb_device::UsbDeviceInfo::new(0x1337, 0x7331)
+        ..UsbDeviceInfo::new(0x1337, 0x7331)
     };
 
-    let usb_dev = usb_device::UsbDevice::new(&usb_bus, usb_dev_info, &[&custom]);
+    let usb_dev = UsbDevice::new(&usb_bus, usb_dev_info, &[&custom]);
 
     loop {
         // Could be in an interrupt

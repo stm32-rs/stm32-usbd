@@ -40,7 +40,7 @@ impl UsbBus {
     }
 
     pub fn endpoints<'a>(&'a self) -> EndpointAllocator<'a, Self> {
-        ::usb_device::UsbBus::endpoints(self)
+        ::usb_device::bus::UsbBus::endpoints(self)
     }
 
     fn ep_regs(&self) -> &'static [EpReg; NUM_ENDPOINTS] {
@@ -48,7 +48,7 @@ impl UsbBus {
     }
 }
 
-impl ::usb_device::UsbBus for UsbBus {
+impl ::usb_device::bus::UsbBus for UsbBus {
     fn alloc_ep(&self, ep_dir: EndpointDirection, ep_addr: Option<u8>, ep_type: EndpointType,
         max_packet_size: u16, _interval: u8) -> Result<u8>
     {

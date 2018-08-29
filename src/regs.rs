@@ -1,4 +1,5 @@
-use usb_device::{Result, UsbError, EndpointType};
+use usb_device::{Result, UsbError};
+use usb_device::endpoint::EndpointType;
 use stm32f103xx::usb;
 use core::mem;
 use vcell::VolatileCell;
