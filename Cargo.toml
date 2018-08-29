@@ -9,7 +9,7 @@ stm32f103xx = "0.10.0"
 # TODO: this fork is used temporarily to be able to set USB clocks correctly in the examples
 stm32f103xx-hal = { git = "https://github.com/mvirkkunen/stm32f103xx-hal", rev = "c01b217e8a8fa85753bae8c3e4121735ee624be6" }
 vcell = "0.1.0"
-usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "c802b5498b4f10041b7ebe4bb24867485b50e0ba" }
+usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "b93e2e521c62e789091efc276404d770e685727e" }
 
 [dev-dependencies]
 cortex-m-rt = "0.5.2"
