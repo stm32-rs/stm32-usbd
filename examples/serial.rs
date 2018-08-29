@@ -200,15 +200,12 @@ fn main() -> ! {
 
     let serial = cdc_acm::SerialPort::new(&usb_bus.endpoints());
 
-    let usb_dev_info = UsbDeviceInfo {
-        manufacturer: "Fake company",
-        product: "Serial port",
-        serial_number: "TEST",
-        device_class: cdc_acm::USB_CLASS_CDC,
-        ..UsbDeviceInfo::new(0x5824, 0x27dd)
-    };
-
-    let usb_dev = UsbDevice::new(&usb_bus, usb_dev_info, &[&serial]);
+    let usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x5824, 0x27dd))
+        .manufacturer("Fake company")
+        .product("Serial port")
+        .serial_number("TEST")
+        .device_class(cdc_acm::USB_CLASS_CDC)
+        .build(&[&serial]);
 
     loop {
         usb_dev.poll();

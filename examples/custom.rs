@@ -99,13 +99,10 @@ fn main() -> ! {
 
     let custom = example::CustomClass::new();
 
-    let usb_dev_info = UsbDeviceInfo {
-        manufacturer: "Fake company",
-        product: "My device",
-        ..UsbDeviceInfo::new(0x1337, 0x7331)
-    };
-
-    let usb_dev = UsbDevice::new(&usb_bus, usb_dev_info, &[&custom]);
+    let usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x1337, 0x7331))
+        .manufacturer("Fake company")
+        .product("My device")
+        .build(&[&custom]);
 
     loop {
         // Could be in an interrupt
