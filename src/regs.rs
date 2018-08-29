@@ -42,9 +42,9 @@ impl PacketMemory {
         }
     }
 
-    pub fn reset(&mut self) {
+    /*pub fn reset(&mut self) {
         self.next = PacketMemory::START;
-    }
+    }*/
 
     fn mem() -> &'static [VolatileCell<u32>; PacketMemory::SIZE/2] {
         return unsafe { &*(PacketMemory::ADDR as *const [VolatileCell<u32>; PacketMemory::SIZE/2]) };

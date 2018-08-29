@@ -23,8 +23,8 @@ mod cdc_acm {
     use core::cmp::min;
     use usb_device::{
         Result, UsbError,
-        UsbBus,
-        EndpointType, EndpointPair, EndpointIn, EndpointOut
+        UsbBus, EndpointAllocator,
+        EndpointIn, EndpointOut
     };
     use usb_device::class::{UsbClass, ControlOutResult, DescriptorWriter};
     use usb_device::control::*;
@@ -57,16 +57,11 @@ mod cdc_acm {
     }
 
     impl<'a, B: UsbBus> SerialPort<'a, B> {
-        pub fn new(eps: (EndpointPair<'a, B>, EndpointPair<'a, B>))
-            -> SerialPort<'a, B>
-        {
-            let (_, comm_ep) = eps.0.split(EndpointType::Interrupt, 8);
-            let (read_ep, write_ep) = eps.1.split(EndpointType::Bulk, 64);
-
+        pub fn new(eps: &EndpointAllocator<'a, B>) -> SerialPort<'a, B> {
             SerialPort {
-                comm_ep,
-                read_ep,
-                write_ep,
+                comm_ep: eps.interrupt(8, 255),
+                read_ep: eps.bulk(64),
+                write_ep: eps.bulk(64),
                 read_buf: RefCell::new(Buf {
                     buf: [0; 64],
                     len: 0,
@@ -111,14 +106,6 @@ mod cdc_acm {
     }
 
     impl<'a, B: UsbBus> UsbClass for SerialPort<'a, B> {
-        fn reset(&self) -> Result<()> {
-            self.comm_ep.configure()?;
-            self.read_ep.configure()?;
-            self.write_ep.configure()?;
-
-            Ok(())
-        }
-
         fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
             let data_if = writer.alloc_interface();
             let comm_if = writer.alloc_interface();
@@ -211,9 +198,8 @@ fn main() -> ! {
     }
 
     let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
-    let eps = usb_bus.endpoints().unwrap();
 
-    let serial = cdc_acm::SerialPort::new((eps.ep1, eps.ep2));
+    let serial = cdc_acm::SerialPort::new(&usb_bus.endpoints());
 
     let usb_dev_info = usb_device::UsbDeviceInfo {
         manufacturer: "Fake company",

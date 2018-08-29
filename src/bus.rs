@@ -1,16 +1,24 @@
 use core::cell::{Cell, RefCell};
 use usb_device::{Result, UsbError};
-use usb_device::bus::{EndpointType, EndpointPair, PollResult};
+use usb_device::bus::{EndpointAllocator, PollResult};
+use usb_device::endpoint::{EndpointDirection, EndpointType};
 use cortex_m::asm::delay;
 use stm32f103xx::{USB, usb};
 use stm32f103xx_hal::rcc::APB1;
 use regs::{NUM_ENDPOINTS, PacketMemory, EpReg, EndpointStatus, calculate_count_rx};
 
+#[derive(Default)]
+struct EndpointRecord {
+    ep_type: Option<EndpointType>,
+    out_valid: bool,
+    in_valid: bool,
+}
+
 pub struct UsbBus {
     regs: USB,
     packet_mem: RefCell<PacketMemory>,
-    max_endpoint: Cell<usize>,
-    endpoints_taken: Cell<bool>,
+    max_endpoint: Cell<Option<usize>>,
+    endpoints: RefCell<[EndpointRecord; NUM_ENDPOINTS]>,
 }
 
 impl UsbBus {
@@ -26,17 +34,13 @@ impl UsbBus {
         UsbBus {
             regs,
             packet_mem: RefCell::new(PacketMemory::new()),
-            max_endpoint: Cell::new(0),
-            endpoints_taken: Cell::new(false),
+            max_endpoint: Cell::new(None),
+            endpoints: RefCell::default(),
         }
     }
 
-    pub fn endpoints(&self) -> Option<Endpoints> {
-        if self.endpoints_taken.replace(true) {
-            None
-        } else {
-            Some(Endpoints::new(self))
-        }
+    pub fn endpoints<'a>(&'a self) -> EndpointAllocator<'a, Self> {
+        ::usb_device::UsbBus::endpoints(self)
     }
 
     fn ep_regs(&self) -> &'static [EpReg; NUM_ENDPOINTS] {
@@ -45,7 +49,80 @@ impl UsbBus {
 }
 
 impl ::usb_device::UsbBus for UsbBus {
+    fn alloc_ep(&self, ep_dir: EndpointDirection, ep_addr: Option<u8>, ep_type: EndpointType,
+        max_packet_size: u16, _interval: u8) -> Result<u8>
+    {
+        if self.max_endpoint.get().is_some() {
+            return Err(UsbError::Busy);
+        }
+
+        let mut pmem = self.packet_mem.borrow_mut();
+        let mut endpoints = self.endpoints.borrow_mut();
+
+        let ep_addr = ep_addr.map(|a| (a & !0x80) as usize);
+        let mut index = ep_addr.unwrap_or(1);
+
+        loop {
+            match ep_addr {
+                Some(ep_addr) if index != ep_addr => { return Err(UsbError::EndpointTaken); },
+                _ => { },
+            }
+
+            if index >= NUM_ENDPOINTS {
+                return Err(UsbError::EndpointOverflow);
+            }
+
+            let ep = &mut endpoints[index];
+
+            match ep.ep_type {
+                None => { ep.ep_type = Some(ep_type); },
+                Some(t) if t != ep_type => { index += 1; continue; },
+                Some(_) => { },
+            };
+
+            match ep_dir {
+                EndpointDirection::Out if !ep.out_valid => {
+                    let (out_size, bits) = calculate_count_rx(max_packet_size as usize)?;
+
+                    let addr_rx = pmem.alloc(out_size)?;
+                    let bd = &pmem.descrs()[index];
+
+                    bd.addr_rx.set(addr_rx);
+                    bd.count_rx.set(bits as usize);
+
+                    ep.out_valid = true;
+
+                    break;
+                },
+                EndpointDirection::In if !ep.in_valid => {
+                    let addr_tx = pmem.alloc(max_packet_size as usize)?;
+                    let bd = &pmem.descrs()[index];
+
+                    bd.addr_tx.set(addr_tx);
+                    bd.count_tx.set(0);
+
+                    ep.in_valid = true;
+
+                    break;
+                }
+                _ => { index += 1; }
+            }
+        }
+
+        //Ok(Endpoint::new(self, (index as u8) | D::ADDR_BIT, ep_type, max_packet_size, interval))
+        Ok((index as u8) | (ep_dir as u8))
+    }
+
     fn enable(&self) {
+        let mut max = 0;
+        for (index, ep) in self.endpoints.borrow().iter().enumerate() {
+            if ep.out_valid || ep.in_valid {
+                max = index;
+            }
+        }
+
+        self.max_endpoint.set(Some(max));
+
         self.regs.cntr.modify(|_, w| w.pdwn().clear_bit());
 
         // There is a chip specific startup delay. For STM32F103xx it's 1µs and this should wait for
@@ -60,42 +137,23 @@ impl ::usb_device::UsbBus for UsbBus {
     fn reset(&self) {
         self.regs.istr.modify(|_, w| unsafe { w.bits(0) });
 
-        self.packet_mem.borrow_mut().reset();
-        self.max_endpoint.set(0);
+        for (index, ep) in self.endpoints.borrow().iter().enumerate() {
+            let reg = &self.ep_regs()[index];
+
+            if let Some(ep_type) = ep.ep_type {
+                reg.configure(ep_type, index as u8);
+
+                if ep.out_valid {
+                    reg.set_stat_rx(EndpointStatus::Valid);
+                }
+
+                if ep.in_valid {
+                    reg.set_stat_tx(EndpointStatus::Nak);
+                }
+            }
+        }
 
         self.regs.daddr.modify(|_, w| unsafe { w.ef().set_bit().add().bits(0) });
-    }
-
-    fn configure_ep(&self, ep_addr: u8, ep_type: EndpointType, max_packet_size: u16) -> Result<()> {
-        let ep = (ep_addr & !0x80) as usize;
-        let reg = &self.ep_regs()[ep];
-        let mut pmem = self.packet_mem.borrow_mut();
-
-        reg.configure(ep_type, ep_addr);
-
-        if ep_addr & 0x80 == 0 {
-            let (out_size, bits) = calculate_count_rx(max_packet_size as usize)?;
-
-            let addr_rx = pmem.alloc(out_size)?;
-            let bd = &pmem.descrs()[ep];
-
-            bd.addr_rx.set(addr_rx);
-            bd.count_rx.set(bits as usize);
-            reg.set_stat_rx(EndpointStatus::Valid);
-        } else {
-            let addr_tx = pmem.alloc(max_packet_size as usize)?;
-            let bd = &pmem.descrs()[ep];
-
-            bd.addr_tx.set(addr_tx);
-            bd.count_tx.set(0);
-            reg.set_stat_tx(EndpointStatus::Nak);
-        }
-
-        if ep > self.max_endpoint.get() {
-            self.max_endpoint.set(ep);
-        }
-
-        Ok(())
     }
 
     fn set_device_address(&self, addr: u8) {
@@ -119,7 +177,7 @@ impl ::usb_device::UsbBus for UsbBus {
         if istr.ctr().bit_is_set() {
             let mut bit = 1;
 
-            for reg in &self.ep_regs()[0..=self.max_endpoint.get()] {
+            for reg in &self.ep_regs()[0..=self.max_endpoint.get().unwrap()] {
                 let v = reg.read();
 
                 if v.ctr_rx().bit_is_set() {
@@ -229,30 +287,6 @@ impl ::usb_device::UsbBus for UsbBus {
             if reg.read().stat_rx().bits() == EndpointStatus::Stall as u8 {
                 reg.set_stat_rx(EndpointStatus::Valid);
             }
-        }
-    }
-}
-
-pub struct Endpoints<'a> {
-    pub ep1: EndpointPair<'a, UsbBus>,
-    pub ep2: EndpointPair<'a, UsbBus>,
-    pub ep3: EndpointPair<'a, UsbBus>,
-    pub ep4: EndpointPair<'a, UsbBus>,
-    pub ep5: EndpointPair<'a, UsbBus>,
-    pub ep6: EndpointPair<'a, UsbBus>,
-    pub ep7: EndpointPair<'a, UsbBus>,
-}
-
-impl<'a> Endpoints<'a> {
-    pub(crate) fn new(bus: &'a UsbBus) -> Endpoints<'a> {
-        Endpoints {
-            ep1: EndpointPair::new(bus, 1),
-            ep2: EndpointPair::new(bus, 2),
-            ep3: EndpointPair::new(bus, 3),
-            ep4: EndpointPair::new(bus, 4),
-            ep5: EndpointPair::new(bus, 5),
-            ep6: EndpointPair::new(bus, 6),
-            ep7: EndpointPair::new(bus, 7),
         }
     }
 }
