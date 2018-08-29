@@ -243,7 +243,7 @@ impl ::usb_device::bus::UsbBus for UsbBus {
 
         reg.set_stat_tx(EndpointStatus::Valid);
 
-        Ok(0)
+        Ok(buf.len())
     }
 
     fn read(&self, ep: u8, buf: &mut [u8]) -> Result<usize> {
