@@ -294,7 +294,7 @@ impl ::usb_device::bus::UsbBus for UsbBus {
 
         if ep & 0x80 != 0 {
             if reg.read().stat_tx().bits() == EndpointStatus::Stall as u8 {
-                reg.set_stat_tx(EndpointStatus::Valid);
+                reg.set_stat_tx(EndpointStatus::Nak);
             }
         } else {
             if reg.read().stat_rx().bits() == EndpointStatus::Stall as u8 {
