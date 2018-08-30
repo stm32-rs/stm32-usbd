@@ -16,6 +16,7 @@ struct EndpointRecord {
     in_valid: bool,
 }
 
+/// USB peripheral driver for STM32F103 microcontrollers.
 pub struct UsbBus {
     regs: USB,
     packet_mem: RefCell<PacketMemory>,
@@ -25,6 +26,7 @@ pub struct UsbBus {
 }
 
 impl UsbBus {
+    /// Constructs a new USB peripheral driver.
     pub fn usb(regs: USB, apb1: &mut rcc::APB1) -> UsbBus {
         // TODO: apb1.enr is not public, figure out how this should really interact with the HAL
         // crate
@@ -44,6 +46,12 @@ impl UsbBus {
         }
     }
 
+    /// Gets an `UsbBusResetter` which can be used to force a USB reset and re-enumeration from the
+    /// device side.
+    ///
+    /// This is a potentially out-of-spec hack useful mainly for development. Force a reset at the
+    /// start of your program to get the host to re-enumerate your device after flashing new
+    /// changes.
     pub fn resetter<'a, M>(&'a self,
         clocks: &rcc::Clocks, crh: &mut gpioa::CRH, pa12: gpioa::PA12<M>) -> UsbBusResetter<'a>
     {
@@ -54,6 +62,7 @@ impl UsbBus {
         }
     }
 
+    /// Gets the `UsbAllocator` for this `UsbBus`.
     pub fn allocator<'a>(&'a self) -> UsbAllocator<'a, Self> {
         // Convenience method so user doesn't have to use usb_device::UsbBus to use this method
         ::usb_device::bus::UsbBus::allocator(self)
@@ -311,6 +320,7 @@ impl ::usb_device::bus::UsbBus for UsbBus {
     }
 }
 
+/// Used for forcing a USB device reset and re-enumeration.
 pub struct UsbBusResetter<'a> {
     bus: &'a UsbBus,
     delay: u32,
@@ -318,6 +328,7 @@ pub struct UsbBusResetter<'a> {
 }
 
 impl<'a> UsbBusResetter<'a> {
+    /// Force a USB device reset and re-enumeration.
     pub fn reset(&mut self) {
         let pdwn = self.bus.regs.cntr.read().pdwn().bit_is_set();
         self.bus.regs.cntr.modify(|_, w| w.pdwn().set_bit());

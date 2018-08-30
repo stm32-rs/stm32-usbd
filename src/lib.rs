@@ -1,3 +1,8 @@
+//! USB peripheral driver for STM32F103 microcontrollers.
+//!
+//! This also serves as the reference implementation and example repository for the `usb-device`
+//! crate for now.
+
 #![no_std]
 #![feature(asm)]
 
@@ -8,5 +13,7 @@ extern crate vcell;
 extern crate usb_device;
 
 mod regs;
+
+/// USB peripheral driver.
 pub mod bus;
 pub use bus::UsbBus;
