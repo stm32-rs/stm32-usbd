@@ -43,7 +43,9 @@ mod cdc_acm {
     }
 
     pub struct SerialPort<'a, B: 'a + UsbBus> {
+        comm_if: InterfaceNumber,
         comm_ep: EndpointIn<'a, B>,
+        data_if: InterfaceNumber,
         read_ep: EndpointOut<'a, B>,
         write_ep: EndpointIn<'a, B>,
 
@@ -51,11 +53,13 @@ mod cdc_acm {
     }
 
     impl<'a, B: UsbBus> SerialPort<'a, B> {
-        pub fn new(eps: &EndpointAllocator<'a, B>) -> SerialPort<'a, B> {
+        pub fn new(alloc: &UsbAllocator<'a, B>) -> SerialPort<'a, B> {
             SerialPort {
-                comm_ep: eps.interrupt(8, 255),
-                read_ep: eps.bulk(64),
-                write_ep: eps.bulk(64),
+                comm_if: alloc.interface(),
+                comm_ep: alloc.interrupt(8, 255),
+                data_if: alloc.interface(),
+                read_ep: alloc.bulk(64),
+                write_ep: alloc.bulk(64),
                 read_buf: RefCell::new(Buf {
                     buf: [0; 64],
                     len: 0,
@@ -101,12 +105,9 @@ mod cdc_acm {
 
     impl<'a, B: UsbBus> UsbClass for SerialPort<'a, B> {
         fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
-            let data_if = writer.alloc_interface();
-            let comm_if = writer.alloc_interface();
-
             // TODO: make a better DescriptorWriter to make it harder to make invalid descriptors
             writer.interface(
-                comm_if,
+                self.comm_if,
                 1,
                 USB_CLASS_CDC,
                 CDC_SUBCLASS_ACM,
@@ -118,7 +119,7 @@ mod cdc_acm {
 
             writer.write(
                 CS_INTERFACE,
-                &[CDC_TYPE_CALL_MANAGEMENT, 0x00, data_if.into()])?;
+                &[CDC_TYPE_CALL_MANAGEMENT, 0x00, self.data_if.into()])?;
 
             writer.write(
                 CS_INTERFACE,
@@ -126,12 +127,12 @@ mod cdc_acm {
 
             writer.write(
                 CS_INTERFACE,
-                &[CDC_TYPE_UNION, comm_if.into(), data_if.into()])?;
+                &[CDC_TYPE_UNION, self.comm_if.into(), self.data_if.into()])?;
 
             writer.endpoint(&self.comm_ep)?;
 
             writer.interface(
-                data_if,
+                self.data_if,
                 2,
                 USB_CLASS_DATA,
                 0x00,
@@ -181,7 +182,7 @@ fn main() -> ! {
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
     usb_bus.resetter(&clocks, &mut gpioa.crh, gpioa.pa12).reset();
 
-    let serial = cdc_acm::SerialPort::new(&usb_bus.endpoints());
+    let serial = cdc_acm::SerialPort::new(&usb_bus.allocator());
 
     let usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x5824, 0x27dd))
         .manufacturer("Fake company")

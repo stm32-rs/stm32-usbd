@@ -1,6 +1,6 @@
 use core::cell::{Cell, RefCell};
 use usb_device::{Result, UsbError};
-use usb_device::bus::{EndpointAllocator, PollResult};
+use usb_device::bus::{UsbAllocator, UsbAllocatorState, PollResult};
 use usb_device::endpoint::{EndpointDirection, EndpointType};
 use cortex_m::asm::delay;
 use stm32f103xx::{USB, usb};
@@ -21,6 +21,7 @@ pub struct UsbBus {
     packet_mem: RefCell<PacketMemory>,
     max_endpoint: Cell<Option<usize>>,
     endpoints: RefCell<[EndpointRecord; NUM_ENDPOINTS]>,
+    allocator_state: UsbAllocatorState
 }
 
 impl UsbBus {
@@ -39,6 +40,7 @@ impl UsbBus {
             packet_mem: RefCell::new(PacketMemory::new()),
             max_endpoint: Cell::new(None),
             endpoints: RefCell::default(),
+            allocator_state: Default::default(),
         }
     }
 
@@ -52,8 +54,9 @@ impl UsbBus {
         }
     }
 
-    pub fn endpoints<'a>(&'a self) -> EndpointAllocator<'a, Self> {
-        ::usb_device::bus::UsbBus::endpoints(self)
+    pub fn allocator<'a>(&'a self) -> UsbAllocator<'a, Self> {
+        // Convenience method so user doesn't have to use usb_device::UsbBus to use this method
+        ::usb_device::bus::UsbBus::allocator(self)
     }
 
     fn ep_regs(&self) -> &'static [EpReg; NUM_ENDPOINTS] {
@@ -62,6 +65,10 @@ impl UsbBus {
 }
 
 impl ::usb_device::bus::UsbBus for UsbBus {
+    fn allocator_state<'a>(&'a self) -> &'a UsbAllocatorState {
+        &self.allocator_state
+    }
+
     fn alloc_ep(&self, ep_dir: EndpointDirection, ep_addr: Option<u8>, ep_type: EndpointType,
         max_packet_size: u16, _interval: u8) -> Result<u8>
     {
