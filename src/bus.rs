@@ -192,8 +192,29 @@ impl ::usb_device::bus::UsbBus for UsbBus {
     fn poll(&self) -> PollResult {
         let istr = self.regs.istr.read();
 
-        if istr.reset().bit_is_set() {
+        if istr.wkup().bit_is_set() {
+            self.regs.istr.modify(|_, w| w.wkup().clear_bit());
+
+            let fnr = self.regs.fnr.read();
+            let bits = (fnr.rxdp().bit_is_set() as u8) << 1 | (fnr.rxdm().bit_is_set() as u8);
+
+            match (fnr.rxdp().bit_is_set(), fnr.rxdm().bit_is_set()) {
+                (false, false) | (false, true) => {
+                    PollResult::Resume
+                },
+                _ => {
+                    // Spurious wakeup event caused by noise
+                    PollResult::Suspend
+                }
+            }
+        } else if istr.reset().bit_is_set() {
+            self.regs.istr.modify(|_, w| w.reset().clear_bit());
+
             PollResult::Reset
+        } else if istr.susp().bit_is_set() {
+            self.regs.istr.modify(|_, w| w.susp().clear_bit());
+
+            PollResult::Suspend
         } else if istr.ctr().bit_is_set() {
             let mut ep_out = 0;
             let mut ep_in_complete = 0;
@@ -313,6 +334,18 @@ impl ::usb_device::bus::UsbBus for UsbBus {
                 reg.set_stat_rx(EndpointStatus::Valid);
             }
         }
+    }
+
+    fn suspend(&self) {
+        self.regs.cntr.modify(|_, w| w
+            .fsusp().set_bit()
+            .lpmode().set_bit());
+    }
+
+    fn resume(&self) {
+        self.regs.cntr.modify(|_, w| w
+            .fsusp().clear_bit()
+            .lpmode().clear_bit());
     }
 }
 
