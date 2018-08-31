@@ -192,42 +192,38 @@ impl ::usb_device::bus::UsbBus for UsbBus {
     fn poll(&self) -> PollResult {
         let istr = self.regs.istr.read();
 
-        let mut res = PollResult::default();
-
         if istr.reset().bit_is_set() {
-            res.reset = true;
-            return res;
-        }
-
-        if istr.err().bit_is_set() {
-            return res;
-        }
-
-        if istr.ctr().bit_is_set() {
+            PollResult::Reset
+        } else if istr.ctr().bit_is_set() {
+            let mut ep_out = 0;
+            let mut ep_in_complete = 0;
+            let mut ep_setup = 0;
             let mut bit = 1;
 
             for reg in &self.ep_regs()[0..=self.max_endpoint.get().unwrap()] {
                 let v = reg.read();
 
                 if v.ctr_rx().bit_is_set() {
-                    res.ep_out |= bit;
+                    ep_out |= bit;
 
-                    if bit == 1 && v.setup().bit_is_set() {
-                        res.setup = true;
+                    if v.setup().bit_is_set() {
+                        ep_setup |= bit;
                     }
                 }
 
                 if v.ctr_tx().bit_is_set() {
-                    res.ep_in_complete |= bit;
+                    ep_in_complete |= bit;
 
                     reg.clear_ctr_tx();
                 }
 
                 bit <<= 1;
             }
-        }
 
-        res
+            PollResult::Data { ep_out, ep_in_complete, ep_setup }
+        } else {
+            PollResult::None
+        }
     }
 
     fn write(&self, ep_addr: u8, buf: &[u8]) -> Result<usize> {
