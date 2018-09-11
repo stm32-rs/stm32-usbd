@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Matti Virkkunen <mvirkkunen@gmail.com>"]
 
 [dependencies]
+bare-metal = "0.2.3"
 cortex-m = "0.5.4"
 stm32f103xx = "0.10.0"
 # TODO: this fork is used temporarily to be able to set USB clocks correctly in the examples

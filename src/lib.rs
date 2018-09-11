@@ -6,14 +6,16 @@
 #![no_std]
 #![feature(asm)]
 
+extern crate bare_metal;
 extern crate cortex_m;
 extern crate stm32f103xx;
 extern crate stm32f103xx_hal;
 extern crate vcell;
 extern crate usb_device;
 
-mod regs;
+mod endpoint;
 
 /// USB peripheral driver.
 pub mod bus;
+
 pub use bus::UsbBus;

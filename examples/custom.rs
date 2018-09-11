@@ -17,22 +17,25 @@ use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
 
 mod example {
-    use core::cell::Cell;
+    use core::sync::atomic::{AtomicUsize, Ordering};
     use usb_device::class_prelude::*;
 
     pub struct CustomClass {
-        value: Cell<Option<u8>>,
+        value: AtomicUsize,
     }
 
     impl CustomClass {
         pub fn new() -> CustomClass {
             CustomClass {
-                value: Cell::new(None),
+                value: AtomicUsize::new(::core::usize::MAX),
             }
         }
 
         pub fn recv(&self) -> Option<u8> {
-            self.value.replace(None)
+            match self.value.swap(::core::usize::MAX, Ordering::SeqCst) {
+                ::core::usize::MAX => None,
+                v => Some(v as u8),
+            }
         }
     }
 
@@ -53,7 +56,7 @@ mod example {
             if req.request_type == control::RequestType::Vendor
                 && req.recipient == control::Recipient::Device
             {
-                self.value.set(Some(req.value as u8));
+                self.value.store(req.value as usize, Ordering::SeqCst);
                 ControlOutResult::Ok
             } else {
                 ControlOutResult::Ignore
@@ -83,7 +86,7 @@ fn main() -> ! {
     let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
 
     let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
-    usb_bus.resetter(&clocks, &mut gpioa.crh, gpioa.pa12).reset();
+    usb_bus.borrow_mut().enable_reset(&clocks, &mut gpioa.crh, gpioa.pa12);
 
     let custom = example::CustomClass::new();
 
@@ -91,6 +94,8 @@ fn main() -> ! {
         .manufacturer("Fake company")
         .product("My device")
         .build(&[&custom]);
+
+    usb_dev.force_reset().expect("reset failed");
 
     loop {
         // Could be in an interrupt

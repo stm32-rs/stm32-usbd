@@ -18,9 +18,9 @@ use stm32f103xx_usb::UsbBus;
 
 // Minimal CDC-ACM implementation
 mod cdc_acm {
-    use core::cell::RefCell;
     use core::cmp::min;
     use usb_device::class_prelude::*;
+    use usb_device::utils::AtomicMutex;
     use usb_device::Result;
 
     pub const USB_CLASS_CDC: u8 = 0x02;
@@ -42,25 +42,25 @@ mod cdc_acm {
         len: usize,
     }
 
-    pub struct SerialPort<'a, B: 'a + UsbBus> {
+    pub struct SerialPort<'a, B: 'a + UsbBus + Sync> {
         comm_if: InterfaceNumber,
         comm_ep: EndpointIn<'a, B>,
         data_if: InterfaceNumber,
         read_ep: EndpointOut<'a, B>,
         write_ep: EndpointIn<'a, B>,
 
-        read_buf: RefCell<Buf>,
+        read_buf: AtomicMutex<Buf>,
     }
 
-    impl<'a, B: UsbBus> SerialPort<'a, B> {
-        pub fn new(alloc: &UsbAllocator<'a, B>) -> SerialPort<'a, B> {
+    impl<'a, B: UsbBus + Sync> SerialPort<'a, B> {
+        pub fn new(bus: &'a UsbBusWrapper<B>) -> SerialPort<'a, B> {
             SerialPort {
-                comm_if: alloc.interface(),
-                comm_ep: alloc.interrupt(8, 255),
-                data_if: alloc.interface(),
-                read_ep: alloc.bulk(64),
-                write_ep: alloc.bulk(64),
-                read_buf: RefCell::new(Buf {
+                comm_if: bus.interface(),
+                comm_ep: bus.interrupt(8, 255),
+                data_if: bus.interface(),
+                read_ep: bus.bulk(64),
+                write_ep: bus.bulk(64),
+                read_buf: AtomicMutex::new(Buf {
                     buf: [0; 64],
                     len: 0,
                 }),
@@ -76,7 +76,12 @@ mod cdc_acm {
         }
 
         pub fn read(&self, data: &mut [u8]) -> Result<usize> {
-            let mut buf = self.read_buf.borrow_mut();
+            let mut guard = self.read_buf.try_lock();
+
+            let buf = match guard {
+                Some(ref mut buf) => buf,
+                None => { return Ok(0) },
+            };
 
             // Terrible buffering implementation for brevity's sake
 
@@ -103,7 +108,7 @@ mod cdc_acm {
         }
     }
 
-    impl<'a, B: UsbBus> UsbClass for SerialPort<'a, B> {
+    impl<'a, B: UsbBus + Sync> UsbClass for SerialPort<'a, B> {
         fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
             // TODO: make a better DescriptorWriter to make it harder to make invalid descriptors
             writer.interface(
@@ -177,12 +182,12 @@ fn main() -> ! {
 
     assert!(clocks.usbclk_valid());
 
-    let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
-
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
-    usb_bus.resetter(&clocks, &mut gpioa.crh, gpioa.pa12).reset();
 
-    let serial = cdc_acm::SerialPort::new(&usb_bus.allocator());
+    let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
+    usb_bus.borrow_mut().enable_reset(&clocks, &mut gpioa.crh, gpioa.pa12);
+
+    let serial = cdc_acm::SerialPort::new(&usb_bus);
 
     let usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x5824, 0x27dd))
         .manufacturer("Fake company")
@@ -190,6 +195,8 @@ fn main() -> ! {
         .serial_number("TEST")
         .device_class(cdc_acm::USB_CLASS_CDC)
         .build(&[&serial]);
+
+    usb_dev.force_reset().expect("reset failed");
 
     loop {
         usb_dev.poll();
