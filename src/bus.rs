@@ -2,7 +2,7 @@ use core::cell::RefCell;
 use core::mem;
 use usb_device::{Result, UsbError};
 use usb_device::bus::{UsbBusWrapper, PollResult};
-use usb_device::endpoint::{EndpointDirection as Dir, EndpointType};
+use usb_device::endpoint::{EndpointDirection, EndpointType, EndpointAddress};
 use usb_device::utils::{FreezableRefCell, AtomicMutex};
 //use bare_metal::Mutex;
 use cortex_m::asm::delay;
@@ -25,17 +25,6 @@ pub struct UsbBus {
     next_ep_mem: usize,
     max_endpoint: usize,
     reset: FreezableRefCell<Option<Reset>>,
-}
-
-fn dir_index(ep_addr: u8) -> Result<(Dir, usize)> {
-    let dir = if ep_addr & 0x80 != 0 { Dir::In } else { Dir::Out };
-    let index = (ep_addr & !0x80) as usize;
-
-    if index >= NUM_ENDPOINTS {
-        return Err(UsbError::EndpointOverflow);
-    }
-
-    Ok((dir, index))
 }
 
 impl UsbBus {
@@ -94,52 +83,45 @@ impl UsbBus {
 }
 
 impl ::usb_device::bus::UsbBus for UsbBus {
-    fn alloc_ep(&mut self, ep_dir: Dir, ep_addr: Option<u8>, ep_type: EndpointType,
-        max_packet_size: u16, _interval: u8) -> Result<u8>
+    fn alloc_ep(
+        &mut self,
+        ep_dir: EndpointDirection,
+        ep_addr: Option<EndpointAddress>,
+        ep_type: EndpointType,
+        max_packet_size: u16,
+        _interval: u8) -> Result<EndpointAddress>
     {
-        let ep_addr = ep_addr.map(|a| (a & !0x80) as usize);
-        let mut index = ep_addr.unwrap_or(1);
-
-        loop {
-            match ep_addr {
-                Some(ep_addr) if index != ep_addr => { return Err(UsbError::EndpointTaken); },
-                _ => { },
-            }
-
-            if index >= NUM_ENDPOINTS {
-                return Err(UsbError::EndpointOverflow);
-            }
-
+        for index in ep_addr.map(|a| a.index()..a.index()+1).unwrap_or(1..NUM_ENDPOINTS) {
             let ep = &mut self.endpoints[index];
 
             match ep.ep_type() {
                 None => { ep.set_ep_type(ep_type); },
-                Some(t) if t != ep_type => { index += 1; continue; },
-                Some(_) => { },
+                Some(t) if t != ep_type => { continue; },
+                _ => { },
             };
 
             match ep_dir {
-                Dir::Out if !ep.is_out_buf_set() => {
+                EndpointDirection::Out if !ep.is_out_buf_set() => {
                     let (out_size, bits) = calculate_count_rx(max_packet_size as usize)?;
 
                     let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, out_size)?;
 
                     ep.set_out_buf(addr, (out_size, bits));
 
-                    break;
+                    return Ok(EndpointAddress::from_parts(index, ep_dir));
                 },
-                Dir::In if !ep.is_in_buf_set() => {
+                EndpointDirection::In if !ep.is_in_buf_set() => {
                     let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, max_packet_size as usize)?;
 
                     ep.set_in_buf(addr, max_packet_size as usize);
 
-                    break;
+                    return Ok(EndpointAddress::from_parts(index, ep_dir));
                 }
-                _ => { index += 1; }
+                _ => { }
             }
         }
 
-        Ok((index as u8) | (ep_dir as u8))
+        Err(UsbError::EndpointOverflow)
     }
 
     fn enable(&mut self) {
@@ -257,62 +239,49 @@ impl ::usb_device::bus::UsbBus for UsbBus {
         }
     }
 
-    fn write(&self, ep_addr: u8, buf: &[u8]) -> Result<usize> {
-        let (dir, index) = dir_index(ep_addr)?;
-
-        if dir != Dir::In {
+    fn write(&self, ep_addr: EndpointAddress, buf: &[u8]) -> Result<usize> {
+        if !ep_addr.is_in() {
             return Err(UsbError::InvalidEndpoint);
         }
 
-        self.endpoints[index].write(buf)
+        self.endpoints[ep_addr.index()].write(buf)
     }
 
-    fn read(&self, ep_addr: u8, buf: &mut [u8]) -> Result<usize> {
-        let (dir, index) = dir_index(ep_addr)?;
-
-        if dir != Dir::Out {
+    fn read(&self, ep_addr: EndpointAddress, buf: &mut [u8]) -> Result<usize> {
+        if !ep_addr.is_out() {
             return Err(UsbError::InvalidEndpoint);
         }
 
-        self.endpoints[index].read(buf)
+        self.endpoints[ep_addr.index()].read(buf)
     }
 
-    fn set_stalled(&self, ep_addr: u8, stalled: bool) {
-        let (dir, index) = dir_index(ep_addr).unwrap();
-
+    fn set_stalled(&self, ep_addr: EndpointAddress, stalled: bool) {
         interrupt::free(|cs| {
             if self.is_stalled(ep_addr) == stalled {
                 return
             }
 
-            let ep = &self.endpoints[index];
+            let ep = &self.endpoints[ep_addr.index()];
 
-            if stalled {
-                if dir == Dir::In {
-                    ep.set_stat_tx(cs, EndpointStatus::Stall);
-                } else {
-                    ep.set_stat_rx(cs, EndpointStatus::Stall);
-                }
-            } else {
-                if dir == Dir::In {
-                    ep.set_stat_tx(cs, EndpointStatus::Nak);
-                } else {
-                    ep.set_stat_rx(cs, EndpointStatus::Valid);
-                }
-            }
+            match (stalled, ep_addr.direction()) {
+                (true, EndpointDirection::In) => ep.set_stat_tx(cs, EndpointStatus::Stall),
+                (true, EndpointDirection::Out) => ep.set_stat_rx(cs, EndpointStatus::Stall),
+                (false, EndpointDirection::In) => ep.set_stat_tx(cs, EndpointStatus::Nak),
+                (false, EndpointDirection::Out) => ep.set_stat_rx(cs, EndpointStatus::Valid),
+            };
         });
     }
 
-    fn is_stalled(&self, ep_addr: u8) -> bool {
-        let (dir, index) = dir_index(ep_addr).unwrap();
+    fn is_stalled(&self, ep_addr: EndpointAddress) -> bool {
+        let ep = &self.endpoints[ep_addr.index()];
+        let reg_v = ep.read_reg();
 
-        let ep = &self.endpoints[index];
+        let status = match ep_addr.direction() {
+            EndpointDirection::In => reg_v.stat_tx().bits(),
+            EndpointDirection::Out => reg_v.stat_rx().bits(),
+        };
 
-        if dir == Dir::In {
-            ep.read_reg().stat_tx().bits() == (EndpointStatus::Stall as u8)
-        } else {
-            ep.read_reg().stat_rx().bits() == (EndpointStatus::Stall as u8)
-        }
+        status == (EndpointStatus::Stall as u8)
     }
 
     fn suspend(&self) {
