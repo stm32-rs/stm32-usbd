@@ -3,14 +3,14 @@ use core::mem;
 use usb_device::{Result, UsbError};
 use usb_device::bus::{UsbBusWrapper, PollResult};
 use usb_device::endpoint::{EndpointDirection, EndpointType, EndpointAddress};
-use usb_device::utils::{FreezableRefCell, AtomicMutex};
-//use bare_metal::Mutex;
 use cortex_m::asm::delay;
 use cortex_m::interrupt;
 use stm32f103xx::USB;
 use stm32f103xx_hal::prelude::*;
 use stm32f103xx_hal::rcc;
 use stm32f103xx_hal::gpio::{self, gpioa};
+use atomic_mutex::AtomicMutex;
+use freezable_ref_cell::FreezableRefCell;
 use endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
 
 struct Reset {
@@ -136,8 +136,8 @@ impl ::usb_device::bus::UsbBus for UsbBus {
 
         self.max_endpoint = max;
 
-        interrupt::free(|_| {
-            let regs = self.regs.try_lock().unwrap();
+        interrupt::free(|cs| {
+            let regs = self.regs.lock(cs);
 
             regs.cntr.modify(|_, w| w.pdwn().clear_bit());
 
@@ -146,14 +146,21 @@ impl ::usb_device::bus::UsbBus for UsbBus {
             delay(72);
 
             regs.btable.modify(|_, w| unsafe { w.btable().bits(0) });
-            regs.cntr.modify(|_, w| w.fres().clear_bit());
+            regs.cntr.modify(|_, w| w
+                .fres().clear_bit()
+                .resetm().set_bit()
+                .suspm().set_bit()
+                .wkupm().set_bit()
+                .errm().set_bit()
+                .pmaovrm().set_bit()
+                .ctrm().set_bit());
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
         });
     }
 
     fn reset(&self) {
         interrupt::free(|cs| {
-            let regs = self.regs.try_lock().unwrap();
+            let regs = self.regs.lock(cs);
 
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
             regs.daddr.modify(|_, w| unsafe { w.ef().set_bit().add().bits(0) });
@@ -165,8 +172,8 @@ impl ::usb_device::bus::UsbBus for UsbBus {
     }
 
     fn set_device_address(&self, addr: u8) {
-        interrupt::free(|_| {
-            self.regs.try_lock().unwrap().daddr.modify(|_, w| unsafe { w.add().bits(addr as u8) });
+        interrupt::free(|cs| {
+            self.regs.lock(cs).daddr.modify(|_, w| unsafe { w.add().bits(addr as u8) });
         });
     }
 
@@ -285,24 +292,24 @@ impl ::usb_device::bus::UsbBus for UsbBus {
     }
 
     fn suspend(&self) {
-        interrupt::free(|_| {
-            self.regs.try_lock().unwrap().cntr.modify(|_, w| w
+        interrupt::free(|cs| {
+             self.regs.lock(cs).cntr.modify(|_, w| w
                 .fsusp().set_bit()
                 .lpmode().set_bit());
         });
     }
 
     fn resume(&self) {
-        interrupt::free(|_| {
-            self.regs.try_lock().unwrap().cntr.modify(|_, w| w
+        interrupt::free(|cs| {
+            self.regs.lock(cs).cntr.modify(|_, w| w
                 .fsusp().clear_bit()
                 .lpmode().clear_bit());
         });
     }
 
     fn force_reset(&self) -> Result<()> {
-        interrupt::free(|_| {
-            let regs = self.regs.try_lock().unwrap();
+        interrupt::free(|cs| {
+            let regs = self.regs.lock(cs);
 
             match *self.reset.borrow() {
                 Some(ref reset) => {

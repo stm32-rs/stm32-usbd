@@ -15,6 +15,10 @@ extern crate usb_device;
 
 mod endpoint;
 
+mod atomic_mutex;
+
+mod freezable_ref_cell;
+
 /// USB peripheral driver.
 pub mod bus;
 

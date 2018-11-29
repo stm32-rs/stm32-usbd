@@ -6,7 +6,7 @@ use cortex_m::interrupt;
 use stm32f103xx::{USB, usb};
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
-use usb_device::utils::AtomicMutex;
+use atomic_mutex::AtomicMutex;
 
 type EndpointBuffer = &'static mut [VolatileCell<u32>];
 

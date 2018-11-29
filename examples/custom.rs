@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+/// Polling based USB serial sample
+
 extern crate cortex_m;
 #[macro_use]
 extern crate cortex_m_rt as rt;
@@ -16,54 +18,7 @@ use rt::ExceptionFrame;
 use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
 
-mod example {
-    use core::sync::atomic::{AtomicUsize, Ordering};
-    use usb_device::class_prelude::*;
-
-    pub struct CustomClass {
-        value: AtomicUsize,
-    }
-
-    impl CustomClass {
-        pub fn new() -> CustomClass {
-            CustomClass {
-                value: AtomicUsize::new(::core::usize::MAX),
-            }
-        }
-
-        pub fn recv(&self) -> Option<u8> {
-            match self.value.swap(::core::usize::MAX, Ordering::SeqCst) {
-                ::core::usize::MAX => None,
-                v => Some(v as u8),
-            }
-        }
-    }
-
-    impl UsbClass for CustomClass {
-        fn control_in(&self, req: &control::Request, buf: &mut [u8]) -> ControlInResult {
-            if req.request_type == control::RequestType::Vendor
-                && req.recipient == control::Recipient::Device
-                && req.length >= 2
-            {
-                buf[..2].copy_from_slice(&[0x13, 0x37]);
-                ControlInResult::Ok(2)
-            } else {
-                ControlInResult::Ignore
-            }
-        }
-
-        fn control_out(&self, req: &control::Request, _buf: &[u8]) -> ControlOutResult {
-            if req.request_type == control::RequestType::Vendor
-                && req.recipient == control::Recipient::Device
-            {
-                self.value.store(req.value as usize, Ordering::SeqCst);
-                ControlOutResult::Ok
-            } else {
-                ControlOutResult::Ignore
-            }
-        }
-    }
-}
+mod cdc_acm;
 
 entry!(main);
 fn main() -> ! {
@@ -86,11 +41,11 @@ fn main() -> ! {
     let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
 
     let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
-    usb_bus.borrow_mut().enable_reset(&clocks, &mut gpioa.crh, gpioa.pa12);
+    usb_bus.init(|b| b.enable_reset(&clocks, &mut gpioa.crh, gpioa.pa12));
 
     let custom = example::CustomClass::new();
 
-    let usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x1337, 0x7331))
+    let mut usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x1337, 0x7331))
         .manufacturer("Fake company")
         .product("My device")
         .build(&[&custom]);
