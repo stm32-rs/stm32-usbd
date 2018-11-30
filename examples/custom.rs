@@ -18,7 +18,54 @@ use rt::ExceptionFrame;
 use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
 
-mod cdc_acm;
+mod example {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+    use usb_device::class_prelude::*;
+
+    pub struct CustomClass {
+        value: AtomicUsize,
+    }
+
+    impl CustomClass {
+        pub fn new() -> CustomClass {
+            CustomClass {
+                value: AtomicUsize::new(::core::usize::MAX),
+            }
+        }
+
+        pub fn recv(&self) -> Option<u8> {
+            match self.value.swap(::core::usize::MAX, Ordering::SeqCst) {
+                ::core::usize::MAX => None,
+                v => Some(v as u8),
+            }
+        }
+    }
+
+    impl UsbClass for CustomClass {
+        fn control_in(&self, req: &control::Request, buf: &mut [u8]) -> ControlInResult {
+            if req.request_type == control::RequestType::Vendor
+                && req.recipient == control::Recipient::Device
+                && req.length >= 2
+            {
+                buf[..2].copy_from_slice(&[0x13, 0x37]);
+                ControlInResult::Ok(2)
+            } else {
+                ControlInResult::Ignore
+            }
+        }
+
+        fn control_out(&self, req: &control::Request, _buf: &[u8]) -> ControlOutResult {
+            if req.request_type == control::RequestType::Vendor
+                && req.recipient == control::Recipient::Device
+            {
+                self.value.store(req.value as usize, Ordering::SeqCst);
+                ControlOutResult::Ok
+            } else {
+                ControlOutResult::Ignore
+            }
+        }
+    }
+}
 
 entry!(main);
 fn main() -> ! {
@@ -28,7 +75,7 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
 
     let clocks = rcc.cfgr
-        .hse(8.mhz())
+        .use_hse(8.mhz())
         .sysclk(48.mhz())
         .pclk1(24.mhz())
         .freeze(&mut flash.acr);
