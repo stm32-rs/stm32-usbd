@@ -8,10 +8,10 @@ bare-metal = "0.2.3"
 cortex-m = "0.5.4"
 stm32f103xx = { version = "0.10.0", features = ["rt"] }
 # TODO: this fork is used temporarily to be able to set USB clocks correctly in the examples
-stm32f103xx-hal = { git = "https://github.com/mvirkkunen/stm32f103xx-hal", rev = "71b5d90972abfcf66cd2fe4a9d4e28df2564abfb" }
+stm32f103xx-hal = { git = "https://github.com/mvirkkunen/stm32f103xx-hal", rev = "0dd491d6238a338d6023dd0328f38c746d81745c" }
 vcell = "0.1.0"
 usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "6b606d394bdebf33de8866a4a21c3aa41e32c010" }
 
 [dev-dependencies]
 cortex-m-rt = "0.5.2"
-panic-semihosting = "0.3.0"
+panic-semihosting = "0.5.1"
