@@ -7,8 +7,8 @@ authors = ["Matti Virkkunen <mvirkkunen@gmail.com>"]
 bare-metal = "0.2.3"
 cortex-m = "0.5.4"
 stm32f103xx = { version = "0.10.0", features = ["rt"] }
-# TODO: this fork is used temporarily to be able to set USB clocks correctly in the examples
-stm32f103xx-hal = { git = "https://github.com/mvirkkunen/stm32f103xx-hal", rev = "0dd491d6238a338d6023dd0328f38c746d81745c" }
+# TODO: this commit is used temporarily to be able to set USB clocks correctly in the examples
+stm32f103xx-hal = { git = "https://github.com/japaric/stm32f103xx-hal", rev = "d1bfbbf9148fc3b9d095fdb3f299aca4070531d8" }
 vcell = "0.1.0"
 usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "6b606d394bdebf33de8866a4a21c3aa41e32c010" }
 
