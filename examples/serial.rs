@@ -53,7 +53,7 @@ fn main() -> ! {
         usb_dev.poll();
 
         if usb_dev.state() == UsbDeviceState::Configured {
-            let mut buf = [0u8; 8];
+            let mut buf = [0u8; 64];
 
             match serial.read(&mut buf) {
                 Ok(count) if count > 0 => {
