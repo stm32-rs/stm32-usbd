@@ -31,13 +31,19 @@ pub struct Endpoint {
 
 pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
     if size <= 62 {
+        // Buffer size is in units of 2 bytes, 0 = 0 bytes
         size = (size + 1) & !0x01;
 
-        Ok((size, (size << (10 - 1)) as u16))
+        let size_bits = size >> 1;
+
+        Ok((size, (size_bits << 10) as u16))
     } else if size <= 1024 {
+        // Buffer size is in units of 32 bytes, 0 = 32 bytes
         size = (size + 31) & !0x1f;
 
-        Ok((size, (0x8000 | (size << (10 - 5)) as u16)))
+        let size_bits = (size >> 5) - 1;
+
+        Ok((size, (0x8000 | (size_bits << 10)) as u16))
     } else {
         Err(UsbError::SizeOverflow)
     }
