@@ -206,7 +206,7 @@ impl Endpoint {
             return Err(UsbError::NoData);
         }
 
-        let count = self.descr().count_rx.get() & 0x3f;
+        let count = self.descr().count_rx.get() & 0x3ff;
         if count > buf.len() {
             return Err(UsbError::BufferOverflow);
         }
