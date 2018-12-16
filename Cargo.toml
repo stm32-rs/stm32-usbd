@@ -9,7 +9,7 @@ cortex-m = "0.5.4"
 stm32f103xx = { version = "0.10.0", features = ["rt"] }
 stm32f103xx-hal = { git = "https://github.com/japaric/stm32f103xx-hal", rev = "d1bfbbf9148fc3b9d095fdb3f299aca4070531d8" }
 vcell = "0.1.0"
-usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "2e07f982068f7d3594b51fe9e30f43f271638174" }
+usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "2b93ede60b46ab48aafe1b9c4412dec923dd45c3" }
 
 [dev-dependencies]
 cortex-m-rt = "0.5.2"

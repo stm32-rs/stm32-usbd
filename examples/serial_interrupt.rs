@@ -17,12 +17,12 @@ use rt::ExceptionFrame;
 use cortex_m::asm::wfi;
 
 use usb_device::prelude::*;
-use usb_device::bus::UsbBusWrapper;
+use usb_device::bus::UsbBusAllocator;
 use stm32f103xx_usb::UsbBus;
 
 mod cdc_acm;
 
-static mut USB_BUS: Option<UsbBusWrapper<UsbBus>> = None;
+static mut USB_BUS: Option<UsbBusAllocator<UsbBus>> = None;
 static mut USB_SERIAL: Option<cdc_acm::SerialPort<UsbBus>> = None;
 static mut USB_DEVICE: Option<UsbDevice<UsbBus>> = None;
 
@@ -93,23 +93,23 @@ fn usb_interrupt() {
     let usb_dev = unsafe { USB_DEVICE.as_mut().unwrap() };
     let serial = unsafe { USB_SERIAL.as_ref().unwrap() };
 
-    usb_dev.poll();
+    if !usb_dev.poll() {
+        return;
+    }
 
-    if usb_dev.state() == UsbDeviceState::Configured {
-        let mut buf = [0u8; 8];
+    let mut buf = [0u8; 8];
 
-        match serial.read(&mut buf) {
-            Ok(count) if count > 0 => {
-                // Echo back in upper case
-                for c in buf[0..count].iter_mut() {
-                    if 0x61 <= *c && *c <= 0x7a {
-                        *c &= !0x20;
-                    }
+    match serial.read(&mut buf) {
+        Ok(count) if count > 0 => {
+            // Echo back in upper case
+            for c in buf[0..count].iter_mut() {
+                if 0x61 <= *c && *c <= 0x7a {
+                    *c &= !0x20;
                 }
+            }
 
-                serial.write(&buf[0..count]).ok();
-            },
-            _ => { },
-        }
+            serial.write(&buf[0..count]).ok();
+        },
+        _ => { },
     }
 }

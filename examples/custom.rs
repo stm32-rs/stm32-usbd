@@ -102,8 +102,9 @@ fn main() -> ! {
     usb_dev.force_reset().expect("reset failed");
 
     loop {
-        // Could be in an interrupt
-        usb_dev.poll();
+        if !usb_dev.poll() {
+            continue;
+        }
 
         if let Some(v) = custom.recv() {
             if v == 0 {

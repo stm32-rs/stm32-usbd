@@ -50,24 +50,24 @@ fn main() -> ! {
     usb_dev.force_reset().expect("reset failed");
 
     loop {
-        usb_dev.poll();
+        if !usb_dev.poll() {
+            continue;
+        }
 
-        if usb_dev.state() == UsbDeviceState::Configured {
-            let mut buf = [0u8; 64];
+        let mut buf = [0u8; 64];
 
-            match serial.read(&mut buf) {
-                Ok(count) if count > 0 => {
-                    // Echo back in upper case
-                    for c in buf[0..count].iter_mut() {
-                        if 0x61 <= *c && *c <= 0x7a {
-                            *c &= !0x20;
-                        }
+        match serial.read(&mut buf) {
+            Ok(count) if count > 0 => {
+                // Echo back in upper case
+                for c in buf[0..count].iter_mut() {
+                    if 0x61 <= *c && *c <= 0x7a {
+                        *c &= !0x20;
                     }
+                }
 
-                    serial.write(&buf[0..count]).ok();
-                },
-                _ => { },
-            }
+                serial.write(&buf[0..count]).ok();
+            },
+            _ => { },
         }
     }
 }
