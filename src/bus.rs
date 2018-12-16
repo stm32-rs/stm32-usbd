@@ -1,3 +1,4 @@
+use bare_metal::Mutex;
 use core::cell::RefCell;
 use core::mem;
 use usb_device::{Result, UsbError};
@@ -10,12 +11,11 @@ use stm32f103xx_hal::prelude::*;
 use stm32f103xx_hal::rcc;
 use stm32f103xx_hal::gpio::{self, gpioa};
 use atomic_mutex::AtomicMutex;
-use freezable_ref_cell::FreezableRefCell;
 use endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
 
 struct Reset {
     delay: u32,
-    pin: RefCell<gpioa::PA12<gpio::Output<gpio::PushPull>>>,
+    pin: Mutex<RefCell<gpioa::PA12<gpio::Output<gpio::PushPull>>>>,
 }
 
 /// USB peripheral driver for STM32F103 microcontrollers.
@@ -24,12 +24,11 @@ pub struct UsbBus {
     endpoints: [Endpoint; NUM_ENDPOINTS],
     next_ep_mem: usize,
     max_endpoint: usize,
-    reset: FreezableRefCell<Option<Reset>>,
+    reset: Option<Reset>,
 }
 
 impl UsbBus {
-    /// Constructs a new USB peripheral driver.
-    pub fn usb(regs: USB, apb1: &mut rcc::APB1) -> UsbBusAllocator<Self> {
+    fn new(regs: USB, apb1: &mut rcc::APB1, reset: Option<Reset>) -> UsbBusAllocator<Self> {
         // TODO: apb1.enr is not public, figure out how this should really interact with the HAL
         // crate
 
@@ -52,20 +51,32 @@ impl UsbBus {
 
                 endpoints
             },
-            reset: FreezableRefCell::default(),
+            reset,
         };
 
         UsbBusAllocator::new(bus)
     }
 
-    /// Enables the `reset` method.
-    pub fn enable_reset<M>(&mut self,
-        clocks: &rcc::Clocks, crh: &mut gpioa::CRH, pa12: gpioa::PA12<M>)
+    /// Constructs a new USB peripheral driver.
+    pub fn usb(regs: USB, apb1: &mut rcc::APB1) -> UsbBusAllocator<Self> {
+        UsbBus::new(regs, apb1, None)
+    }
+
+    /// Constructs a new USB peripheral driver with the "reset" method enabled.
+    pub fn usb_with_reset<M>(
+        regs: USB,
+        apb1: &mut rcc::APB1,
+        clocks: &rcc::Clocks,
+        crh: &mut gpioa::CRH,
+        pa12: gpioa::PA12<M>) -> UsbBusAllocator<Self>
     {
-        *self.reset.borrow_mut() = Some(Reset {
-            delay: clocks.sysclk().0,
-            pin: RefCell::new(pa12.into_push_pull_output(crh)),
-        });
+        UsbBus::new(
+            regs,
+            apb1,
+            Some(Reset {
+                delay: clocks.sysclk().0,
+                pin: Mutex::new(RefCell::new(pa12.into_push_pull_output(crh))),
+            }))
     }
 
     fn alloc_ep_mem(next_ep_mem: &mut usize, size: usize) -> Result<usize> {
@@ -125,8 +136,6 @@ impl ::usb_device::bus::UsbBus for UsbBus {
     }
 
     fn enable(&mut self) {
-        self.reset.freeze();
-
         let mut max = 0;
         for (index, ep) in self.endpoints.iter().enumerate() {
             if ep.is_out_buf_set() || ep.is_in_buf_set() {
@@ -311,12 +320,12 @@ impl ::usb_device::bus::UsbBus for UsbBus {
         interrupt::free(|cs| {
             let regs = self.regs.lock(cs);
 
-            match *self.reset.borrow() {
+            match self.reset {
                 Some(ref reset) => {
                     let pdwn = regs.cntr.read().pdwn().bit_is_set();
                     regs.cntr.modify(|_, w| w.pdwn().set_bit());
 
-                    reset.pin.borrow_mut().set_low();
+                    reset.pin.borrow(cs).borrow_mut().set_low();
                     delay(reset.delay);
 
                     regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));

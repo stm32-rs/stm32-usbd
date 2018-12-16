@@ -17,8 +17,6 @@ mod endpoint;
 
 mod atomic_mutex;
 
-mod freezable_ref_cell;
-
 /// USB peripheral driver.
 pub mod bus;
 

@@ -35,8 +35,8 @@ fn main() -> ! {
 
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
 
-    let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
-    usb_bus.init(|b| b.enable_reset(&clocks, &mut gpioa.crh, gpioa.pa12));
+    let usb_bus = UsbBus::usb_with_reset(dp.USB,
+        &mut rcc.apb1, &clocks, &mut gpioa.crh, gpioa.pa12);
 
     let serial = cdc_acm::SerialPort::new(&usb_bus);
 

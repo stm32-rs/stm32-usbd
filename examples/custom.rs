@@ -86,8 +86,8 @@ fn main() -> ! {
 
     let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
 
-    let usb_bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
-    usb_bus.init(|b| b.enable_reset(&clocks, &mut gpioa.crh, gpioa.pa12));
+    let usb_bus = UsbBus::usb_with_reset(dp.USB,
+        &mut rcc.apb1, &clocks, &mut gpioa.crh, gpioa.pa12);
 
     let custom = example::CustomClass::new();
 

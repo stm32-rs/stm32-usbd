@@ -46,8 +46,8 @@ fn main() -> ! {
 
     // Unsafe to allow access to static variables
     unsafe {
-        let bus = UsbBus::usb(dp.USB, &mut rcc.apb1);
-        bus.init(|b| b.enable_reset(&clocks, &mut gpioa.crh, gpioa.pa12));
+        let bus = UsbBus::usb_with_reset(dp.USB,
+            &mut rcc.apb1, &clocks, &mut gpioa.crh, gpioa.pa12);
 
         USB_BUS = Some(bus);
 
