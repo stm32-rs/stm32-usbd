@@ -95,7 +95,7 @@ impl<'a, B: UsbBus + Sync> SerialPort<'a, B> {
     }
 }
 
-impl<'a, B: UsbBus + Sync> UsbClass for SerialPort<'a, B> {
+impl<'a, B: UsbBus + Sync> UsbClass<B> for SerialPort<'a, B> {
     fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
         // TODO: make a better DescriptorWriter to make it harder to make invalid descriptors
         writer.interface(
@@ -143,19 +143,17 @@ impl<'a, B: UsbBus + Sync> UsbClass for SerialPort<'a, B> {
         }
     }
 
-    fn control_out(&self, req: &control::Request, buf: &[u8]) -> ControlOutResult {
-        let _ = buf;
+    fn control_out(&self, xfer: ControlOut<B>) {
+        let req = *xfer.request();
 
         if req.request_type == control::RequestType::Class
             && req.recipient == control::Recipient::Interface
         {
             return match req.request {
-                REQ_SET_LINE_CODING => ControlOutResult::Ok,
-                REQ_SET_CONTROL_LINE_STATE => ControlOutResult::Ok,
-                _ => ControlOutResult::Ignore,
+                REQ_SET_LINE_CODING => xfer.accept().unwrap(),
+                REQ_SET_CONTROL_LINE_STATE => xfer.accept().unwrap(),
+                _ => xfer.reject().unwrap(),
             };
         }
-
-        ControlOutResult::Ignore
     }
 }

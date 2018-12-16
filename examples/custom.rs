@@ -41,27 +41,26 @@ mod example {
         }
     }
 
-    impl UsbClass for CustomClass {
-        fn control_in(&self, req: &control::Request, buf: &mut [u8]) -> ControlInResult {
+    impl<B: UsbBus> UsbClass<B> for CustomClass {
+        fn control_in(&self, xfer: ControlIn<B>) {
+            let req = *xfer.request();
+
             if req.request_type == control::RequestType::Vendor
                 && req.recipient == control::Recipient::Device
                 && req.length >= 2
             {
-                buf[..2].copy_from_slice(&[0x13, 0x37]);
-                ControlInResult::Ok(2)
-            } else {
-                ControlInResult::Ignore
+                xfer.accept_with(&[0x13, 0x37]).unwrap();
             }
         }
 
-        fn control_out(&self, req: &control::Request, _buf: &[u8]) -> ControlOutResult {
+        fn control_out(&self, xfer: ControlOut<B>) {
+            let req = *xfer.request();
+
             if req.request_type == control::RequestType::Vendor
                 && req.recipient == control::Recipient::Device
             {
                 self.value.store(req.value as usize, Ordering::SeqCst);
-                ControlOutResult::Ok
-            } else {
-                ControlOutResult::Ignore
+                xfer.accept().unwrap();
             }
         }
     }
@@ -92,10 +91,13 @@ fn main() -> ! {
 
     let custom = example::CustomClass::new();
 
-    let mut usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x1337, 0x7331))
+    let mut usb_dev = UsbDevice::new(
+            &usb_bus,
+            UsbVidPid(0x1337, 0x7331),
+            &[&custom])
         .manufacturer("Fake company")
         .product("My device")
-        .build(&[&custom]);
+        .build();
 
     usb_dev.force_reset().expect("reset failed");
 

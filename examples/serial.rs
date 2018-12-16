@@ -40,12 +40,12 @@ fn main() -> ! {
 
     let serial = cdc_acm::SerialPort::new(&usb_bus);
 
-    let mut usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x5824, 0x27dd))
+    let mut usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x5824, 0x27dd), &[&serial])
         .manufacturer("Fake company")
         .product("Serial port")
         .serial_number("TEST")
         .device_class(cdc_acm::USB_CLASS_CDC)
-        .build(&[&serial]);
+        .build();
 
     usb_dev.force_reset().expect("reset failed");
 
