@@ -36,13 +36,13 @@ pub struct SerialPort<'a, B: 'a + UsbBus + Sync> {
 }
 
 impl<'a, B: UsbBus + Sync> SerialPort<'a, B> {
-    pub fn new(bus: &'a UsbBusWrapper<B>) -> SerialPort<'a, B> {
+    pub fn new(alloc: &'a UsbBusAllocator<B>) -> SerialPort<'a, B> {
         SerialPort {
-            comm_if: bus.interface(),
-            comm_ep: bus.interrupt(8, 255),
-            data_if: bus.interface(),
-            read_ep: bus.bulk(64),
-            write_ep: bus.bulk(64),
+            comm_if: alloc.interface(),
+            comm_ep: alloc.interrupt(8, 255),
+            data_if: alloc.interface(),
+            read_ep: alloc.bulk(64),
+            write_ep: alloc.bulk(64),
             read_buf: RefCell::new(Buf {
                 buf: [0; 64],
                 len: 0,

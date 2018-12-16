@@ -1,7 +1,7 @@
 use core::cell::RefCell;
 use core::mem;
 use usb_device::{Result, UsbError};
-use usb_device::bus::{UsbBusWrapper, PollResult};
+use usb_device::bus::{UsbBusAllocator, PollResult};
 use usb_device::endpoint::{EndpointDirection, EndpointType, EndpointAddress};
 use cortex_m::asm::delay;
 use cortex_m::interrupt;
@@ -29,7 +29,7 @@ pub struct UsbBus {
 
 impl UsbBus {
     /// Constructs a new USB peripheral driver.
-    pub fn usb(regs: USB, apb1: &mut rcc::APB1) -> UsbBusWrapper<Self> {
+    pub fn usb(regs: USB, apb1: &mut rcc::APB1) -> UsbBusAllocator<Self> {
         // TODO: apb1.enr is not public, figure out how this should really interact with the HAL
         // crate
 
@@ -55,7 +55,7 @@ impl UsbBus {
             reset: FreezableRefCell::default(),
         };
 
-        UsbBusWrapper::new(bus)
+        UsbBusAllocator::new(bus)
     }
 
     /// Enables the `reset` method.
