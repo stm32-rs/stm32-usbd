@@ -1,18 +1,12 @@
 #![no_std]
 #![no_main]
 
-extern crate cortex_m;
-#[macro_use]
-extern crate cortex_m_rt as rt;
+#[macro_use] extern crate cortex_m_rt as rt;
+#[macro_use] extern crate stm32f103xx;
 extern crate panic_semihosting;
-#[macro_use]
-extern crate stm32f103xx;
-extern crate stm32f103xx_hal as hal;
-extern crate usb_device;
-extern crate stm32f103xx_usb;
 
 use stm32f103xx::Interrupt;
-use hal::prelude::*;
+use stm32f103xx_hal::prelude::*;
 use rt::ExceptionFrame;
 use cortex_m::asm::wfi;
 

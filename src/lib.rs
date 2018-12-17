@@ -20,4 +20,4 @@ mod atomic_mutex;
 /// USB peripheral driver.
 pub mod bus;
 
-pub use bus::UsbBus;
+pub use crate::bus::UsbBus;

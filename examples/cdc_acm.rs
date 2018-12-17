@@ -1,4 +1,4 @@
-/// Minimal CDC-ACM implementation for the examples - this will eventually be a real crate!
+// Minimal CDC-ACM implementation for the examples - this will eventually be a real crate!
 
 use core::cell::{Cell, RefCell};
 use core::cmp::min;

@@ -1,6 +1,7 @@
 [package]
 name = "stm32f103xx-usb"
 version = "0.1.0"
+edition = "2018"
 authors = ["Matti Virkkunen <mvirkkunen@gmail.com>"]
 
 [dependencies]

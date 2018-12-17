@@ -1,18 +1,13 @@
 #![no_std]
 #![no_main]
 
-/// Polling based USB serial sample
+// Custom class sample
 
-extern crate cortex_m;
-#[macro_use]
-extern crate cortex_m_rt as rt;
+#[macro_use] extern crate cortex_m_rt as rt;
 extern crate panic_semihosting;
-extern crate stm32f103xx_hal as hal;
-extern crate usb_device;
-extern crate stm32f103xx_usb;
 
-use hal::prelude::*;
-use hal::stm32f103xx;
+use stm32f103xx_hal::prelude::*;
+use stm32f103xx_hal::stm32f103xx;
 use rt::ExceptionFrame;
 
 use usb_device::prelude::*;

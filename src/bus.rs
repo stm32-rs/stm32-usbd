@@ -10,8 +10,8 @@ use stm32f103xx::USB;
 use stm32f103xx_hal::prelude::*;
 use stm32f103xx_hal::rcc;
 use stm32f103xx_hal::gpio::{self, gpioa};
-use atomic_mutex::AtomicMutex;
-use endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
+use crate::atomic_mutex::AtomicMutex;
+use crate::endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
 
 struct Reset {
     delay: u32,
