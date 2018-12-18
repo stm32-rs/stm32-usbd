@@ -1,22 +1,15 @@
 #![no_std]
 #![no_main]
 
-extern crate cortex_m;
-#[macro_use]
-extern crate cortex_m_rt as rt;
 extern crate panic_semihosting;
-extern crate stm32f103xx_hal as hal;
-extern crate usb_device;
-extern crate stm32f103xx_usb;
 
-use hal::prelude::*;
-use hal::stm32f103xx;
-use rt::ExceptionFrame;
+use cortex_m_rt::entry;
+use stm32f103xx_hal::prelude::*;
 
 use usb_device::test_class::TestClass;
 use stm32f103xx_usb::UsbBus;
 
-entry!(main);
+#[entry]
 fn main() -> ! {
     let dp = stm32f103xx::Peripherals::take().unwrap();
 
@@ -47,14 +40,4 @@ fn main() -> ! {
         usb_dev.poll();
         test.poll();
     }
-}
-
-exception!(HardFault, hard_fault);
-fn hard_fault(ef: &ExceptionFrame) -> ! {
-    panic!("{:#?}", ef);
-}
-
-exception!(*, default_handler);
-fn default_handler(irqn: i16) {
-    panic!("Unhandled exception (IRQn = {})", irqn);
 }
