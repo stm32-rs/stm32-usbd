@@ -37,7 +37,8 @@ fn main() -> ! {
     usb_dev.force_reset().expect("reset failed");
 
     loop {
-        usb_dev.poll();
-        test.poll();
+        if usb_dev.poll() {
+            test.poll();
+        }
     }
 }
