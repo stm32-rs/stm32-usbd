@@ -45,7 +45,7 @@ pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
 
         Ok((size, (0x8000 | (size_bits << 10)) as u16))
     } else {
-        Err(UsbError::SizeOverflow)
+        Err(UsbError::EndpointMemoryOverflow)
     }
 }
 
@@ -147,7 +147,7 @@ impl Endpoint {
 
         let in_buf = match guard {
             Some(ref b) => b,
-            None => { return Err(UsbError::Busy); }
+            None => { return Err(UsbError::WouldBlock); }
         };
 
         if buf.len() > in_buf.len() << 1 {
@@ -157,7 +157,7 @@ impl Endpoint {
         let reg = self.reg();
 
         match reg.read().stat_tx().bits().into() {
-            EndpointStatus::Valid => return Err(UsbError::Busy),
+            EndpointStatus::Valid => return Err(UsbError::WouldBlock),
             EndpointStatus::Disabled => return Err(UsbError::InvalidEndpoint),
             _ => {},
         };
@@ -192,7 +192,7 @@ impl Endpoint {
 
         let out_buf = match guard {
             Some(ref b) => b,
-            None => { return Err(UsbError::Busy); }
+            None => { return Err(UsbError::WouldBlock); }
         };
 
         let reg = self.reg();
@@ -205,7 +205,7 @@ impl Endpoint {
         }
 
         if !reg_v.ctr_rx().bit_is_set() {
-            return Err(UsbError::NoData);
+            return Err(UsbError::WouldBlock);
         }
 
         let count = self.descr().count_rx.get() & 0x3ff;

@@ -62,7 +62,7 @@ impl<'a, B: UsbBus + Sync> SerialPort<'a, B> {
 
         match self.write_ep.write(data) {
             Ok(count) => Ok(count),
-            Err(UsbError::Busy) => Ok(0),
+            Err(UsbError::WouldBlock) => Ok(0),
             e => e,
         }
     }
@@ -74,14 +74,10 @@ impl<'a, B: UsbBus + Sync> SerialPort<'a, B> {
 
         if buf.len == 0 {
             buf.len = match self.read_ep.read(&mut buf.buf) {
+                Ok(0) | Err(UsbError::WouldBlock) => return Ok(0),
                 Ok(count) => count,
-                Err(UsbError::NoData) => return Ok(0),
                 e => return e,
             };
-        }
-
-        if buf.len == 0 {
-            return Ok(0);
         }
 
         let count = min(data.len(), buf.len);

@@ -84,7 +84,7 @@ impl UsbBus {
 
         let addr = *next_ep_mem;
         if addr + size > Endpoint::MEM_SIZE {
-            return Err(UsbError::SizeOverflow);
+            return Err(UsbError::EndpointMemoryOverflow);
         }
 
         *next_ep_mem += size;
@@ -132,7 +132,10 @@ impl usb_device::bus::UsbBus for UsbBus {
             }
         }
 
-        Err(UsbError::EndpointOverflow)
+        Err(match ep_addr {
+            Some(_) => UsbError::InvalidEndpoint,
+            None => UsbError::EndpointOverflow,
+        })
     }
 
     fn enable(&mut self) {
