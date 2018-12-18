@@ -1,17 +1,14 @@
 #![no_std]
 #![no_main]
 
-#[macro_use] extern crate cortex_m_rt as rt;
-#[macro_use] extern crate stm32f103xx;
 extern crate panic_semihosting;
 
-use stm32f103xx::Interrupt;
-use stm32f103xx_hal::prelude::*;
-use rt::ExceptionFrame;
 use cortex_m::asm::wfi;
+use cortex_m_rt::entry;
+use stm32f103xx::{interrupt, Interrupt};
+use stm32f103xx_hal::prelude::*;
 
-use usb_device::prelude::*;
-use usb_device::bus::UsbBusAllocator;
+use usb_device::{prelude::*, bus::UsbBusAllocator};
 use stm32f103xx_usb::UsbBus;
 
 mod cdc_acm;
@@ -20,7 +17,7 @@ static mut USB_BUS: Option<UsbBusAllocator<UsbBus>> = None;
 static mut USB_SERIAL: Option<cdc_acm::SerialPort<UsbBus>> = None;
 static mut USB_DEVICE: Option<UsbDevice<UsbBus>> = None;
 
-entry!(main);
+#[entry]
 fn main() -> ! {
     let p = cortex_m::Peripherals::take().unwrap();
     let dp = stm32f103xx::Peripherals::take().unwrap();
@@ -70,18 +67,15 @@ fn main() -> ! {
     loop { wfi(); }
 }
 
-exception!(HardFault, hard_fault);
-fn hard_fault(ef: &ExceptionFrame) -> ! {
-    panic!("{:#?}", ef);
+#[interrupt]
+fn CAN1_TX() {
+    usb_interrupt();
 }
 
-exception!(*, default_handler);
-fn default_handler(irqn: i16) {
-    panic!("Unhandled exception (IRQn = {})", irqn);
+#[interrupt]
+fn CAN1_RX0() {
+    usb_interrupt();
 }
-
-interrupt!(CAN1_TX, usb_interrupt);
-interrupt!(CAN1_RX0, usb_interrupt);
 
 fn usb_interrupt() {
     let usb_dev = unsafe { USB_DEVICE.as_mut().unwrap() };

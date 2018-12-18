@@ -5,13 +5,13 @@ edition = "2018"
 authors = ["Matti Virkkunen <mvirkkunen@gmail.com>"]
 
 [dependencies]
-bare-metal = "0.2.3"
-cortex-m = "0.5.4"
-stm32f103xx = { version = "0.10.0", features = ["rt"] }
-stm32f103xx-hal = { git = "https://github.com/japaric/stm32f103xx-hal", rev = "d1bfbbf9148fc3b9d095fdb3f299aca4070531d8" }
+bare-metal = "0.2.4"
+cortex-m = "0.5.8"
+stm32f103xx = { version = "0.11.0", features = ["rt"] }
+stm32f103xx-hal = { git = "https://github.com/japaric/stm32f103xx-hal", rev = "cabc005ac2c678f1e6a0c57ababfc1d0581f0ad6" }
 vcell = "0.1.0"
-usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "41a5edf89b572742a968428bfebbbf65ef555f76" }
+usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "5e6b94dc64ae7909ae536e29a0d65d367039c989" }
 
 [dev-dependencies]
-cortex-m-rt = "0.5.2"
+cortex-m-rt = "0.6.7"
 panic-semihosting = "0.5.1"

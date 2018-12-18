@@ -1,19 +1,17 @@
 #![no_std]
 #![no_main]
 
-#[macro_use] extern crate cortex_m_rt as rt;
 extern crate panic_semihosting;
 
+use cortex_m_rt::entry;
 use stm32f103xx_hal::prelude::*;
-use stm32f103xx_hal::stm32f103xx;
-use rt::ExceptionFrame;
 
 use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
 
 mod cdc_acm;
 
-entry!(main);
+#[entry]
 fn main() -> ! {
     let dp = stm32f103xx::Peripherals::take().unwrap();
 
@@ -65,14 +63,4 @@ fn main() -> ! {
             _ => { },
         }
     }
-}
-
-exception!(HardFault, hard_fault);
-fn hard_fault(ef: &ExceptionFrame) -> ! {
-    panic!("{:#?}", ef);
-}
-
-exception!(*, default_handler);
-fn default_handler(irqn: i16) {
-    panic!("Unhandled exception (IRQn = {})", irqn);
 }

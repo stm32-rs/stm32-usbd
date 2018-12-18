@@ -107,16 +107,12 @@ impl Endpoint {
         descr.count_tx.set(0);
     }
 
-    /*fn mem(&self) -> &'static [VolatileCell<u32>] {
-        unsafe { slice::from_raw_parts(self.addr as *const VolatileCell<u32>, self.size) }
-    }*/
-
     fn descr(&self) -> &'static BufferDescriptor {
         unsafe { &*(Self::MEM_ADDR as *const BufferDescriptor).offset(self.index as isize) }
     }
 
-    fn reg(&self) -> &'static usb::EP0R {
-        unsafe { &*(&(*USB::ptr()).ep0r as *const usb::EP0R).offset(self.index as isize) }
+    fn reg(&self) -> &'static usb::EPR {
+        unsafe { &(*USB::ptr()).epr[self.index as usize] }
     }
 
     pub fn configure(&self, cs: &CriticalSection) {
@@ -246,7 +242,7 @@ impl Endpoint {
         }
     }
 
-    pub fn read_reg(&self) -> usb::ep0r::R {
+    pub fn read_reg(&self) -> usb::epr::R {
         self.reg().read()
     }
 
@@ -256,7 +252,7 @@ impl Endpoint {
         self.reg().modify(f)
     }*/
 
-    fn clear_toggle_bits(w: &mut usb::ep0r::W) -> &mut usb::ep0r::W {
+    fn clear_toggle_bits(w: &mut usb::epr::W) -> &mut usb::epr::W {
         unsafe {
             w
                 .dtog_rx().clear_bit()
