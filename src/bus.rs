@@ -1,9 +1,9 @@
 use bare_metal::Mutex;
 use core::cell::RefCell;
 use core::mem;
-use usb_device::{Result, UsbError};
+use usb_device::{Result, UsbDirection, UsbError};
 use usb_device::bus::{UsbBusAllocator, PollResult};
-use usb_device::endpoint::{EndpointDirection, EndpointType, EndpointAddress};
+use usb_device::endpoint::{EndpointType, EndpointAddress};
 use cortex_m::asm::delay;
 use cortex_m::interrupt;
 use stm32f103xx::USB;
@@ -93,10 +93,10 @@ impl UsbBus {
     }
 }
 
-impl ::usb_device::bus::UsbBus for UsbBus {
+impl usb_device::bus::UsbBus for UsbBus {
     fn alloc_ep(
         &mut self,
-        ep_dir: EndpointDirection,
+        ep_dir: UsbDirection,
         ep_addr: Option<EndpointAddress>,
         ep_type: EndpointType,
         max_packet_size: u16,
@@ -112,7 +112,7 @@ impl ::usb_device::bus::UsbBus for UsbBus {
             };
 
             match ep_dir {
-                EndpointDirection::Out if !ep.is_out_buf_set() => {
+                UsbDirection::Out if !ep.is_out_buf_set() => {
                     let (out_size, bits) = calculate_count_rx(max_packet_size as usize)?;
 
                     let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, out_size)?;
@@ -121,7 +121,7 @@ impl ::usb_device::bus::UsbBus for UsbBus {
 
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
                 },
-                EndpointDirection::In if !ep.is_in_buf_set() => {
+                UsbDirection::In if !ep.is_in_buf_set() => {
                     let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, max_packet_size as usize)?;
 
                     ep.set_in_buf(addr, max_packet_size as usize);
@@ -280,10 +280,10 @@ impl ::usb_device::bus::UsbBus for UsbBus {
             let ep = &self.endpoints[ep_addr.index()];
 
             match (stalled, ep_addr.direction()) {
-                (true, EndpointDirection::In) => ep.set_stat_tx(cs, EndpointStatus::Stall),
-                (true, EndpointDirection::Out) => ep.set_stat_rx(cs, EndpointStatus::Stall),
-                (false, EndpointDirection::In) => ep.set_stat_tx(cs, EndpointStatus::Nak),
-                (false, EndpointDirection::Out) => ep.set_stat_rx(cs, EndpointStatus::Valid),
+                (true, UsbDirection::In) => ep.set_stat_tx(cs, EndpointStatus::Stall),
+                (true, UsbDirection::Out) => ep.set_stat_rx(cs, EndpointStatus::Stall),
+                (false, UsbDirection::In) => ep.set_stat_tx(cs, EndpointStatus::Nak),
+                (false, UsbDirection::Out) => ep.set_stat_rx(cs, EndpointStatus::Valid),
             };
         });
     }
@@ -293,8 +293,8 @@ impl ::usb_device::bus::UsbBus for UsbBus {
         let reg_v = ep.read_reg();
 
         let status = match ep_addr.direction() {
-            EndpointDirection::In => reg_v.stat_tx().bits(),
-            EndpointDirection::Out => reg_v.stat_rx().bits(),
+            UsbDirection::In => reg_v.stat_tx().bits(),
+            UsbDirection::Out => reg_v.stat_rx().bits(),
         };
 
         status == (EndpointStatus::Stall as u8)
