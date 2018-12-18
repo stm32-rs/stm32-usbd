@@ -4,7 +4,6 @@
 //! crate for now.
 
 #![no_std]
-#![feature(asm)]
 
 extern crate bare_metal;
 extern crate cortex_m;
