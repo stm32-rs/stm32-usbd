@@ -35,12 +35,12 @@ impl<T> AtomicMutex<T> {
     }
 }
 
-pub struct AtomicMutexGuard<'a, T: 'a> {
+pub struct AtomicMutexGuard<'a, T> {
     lock: &'a AtomicBool,
     value: &'a mut T,
 }
 
-impl<'a, T: 'a> Deref for AtomicMutexGuard<'a, T> {
+impl<T> Deref for AtomicMutexGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -48,13 +48,13 @@ impl<'a, T: 'a> Deref for AtomicMutexGuard<'a, T> {
     }
 }
 
-impl<'a, T: 'a> DerefMut for AtomicMutexGuard<'a, T> {
+impl<T> DerefMut for AtomicMutexGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         self.value
     }
 }
 
-impl<'a, T: 'a> Drop for AtomicMutexGuard<'a, T> {
+impl<T> Drop for AtomicMutexGuard<'_, T> {
     fn drop(&mut self) {
         self.lock.store(false, Ordering::SeqCst);
     }

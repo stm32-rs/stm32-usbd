@@ -24,7 +24,7 @@ struct Buf {
     len: usize,
 }
 
-pub struct SerialPort<'a, B: 'a + UsbBus + Sync> {
+pub struct SerialPort<'a, B: UsbBus + Sync> {
     comm_if: InterfaceNumber,
     comm_ep: EndpointIn<'a, B>,
     data_if: InterfaceNumber,
@@ -35,8 +35,8 @@ pub struct SerialPort<'a, B: 'a + UsbBus + Sync> {
     need_zlp: Cell<bool>,
 }
 
-impl<'a, B: UsbBus + Sync> SerialPort<'a, B> {
-    pub fn new(alloc: &'a UsbBusAllocator<B>) -> SerialPort<'a, B> {
+impl<B: UsbBus + Sync> SerialPort<'_, B> {
+    pub fn new(alloc: &UsbBusAllocator<B>) -> SerialPort<'_, B> {
         SerialPort {
             comm_if: alloc.interface(),
             comm_ep: alloc.interrupt(8, 255),
@@ -91,7 +91,7 @@ impl<'a, B: UsbBus + Sync> SerialPort<'a, B> {
     }
 }
 
-impl<'a, B: UsbBus + Sync> UsbClass<B> for SerialPort<'a, B> {
+impl<B: UsbBus + Sync> UsbClass<B> for SerialPort<'_, B> {
     fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
         // TODO: make a better DescriptorWriter to make it harder to make invalid descriptors
         writer.interface(
