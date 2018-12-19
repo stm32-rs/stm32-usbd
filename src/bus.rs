@@ -122,9 +122,11 @@ impl usb_device::bus::UsbBus for UsbBus {
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
                 },
                 UsbDirection::In if !ep.is_in_buf_set() => {
-                    let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, max_packet_size as usize)?;
+                    let size = (max_packet_size as usize + 1) & !0x01;
 
-                    ep.set_in_buf(addr, max_packet_size as usize);
+                    let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, size as usize)?;
+
+                    ep.set_in_buf(addr, size as usize);
 
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
                 }
