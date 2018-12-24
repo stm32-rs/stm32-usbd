@@ -93,10 +93,8 @@ impl<B: UsbBus + Sync> SerialPort<'_, B> {
 
 impl<B: UsbBus + Sync> UsbClass<B> for SerialPort<'_, B> {
     fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
-        // TODO: make a better DescriptorWriter to make it harder to make invalid descriptors
         writer.interface(
             self.comm_if,
-            1,
             USB_CLASS_CDC,
             CDC_SUBCLASS_ACM,
             CDC_PROTOCOL_AT)?;
@@ -121,7 +119,6 @@ impl<B: UsbBus + Sync> UsbClass<B> for SerialPort<'_, B> {
 
         writer.interface(
             self.data_if,
-            2,
             USB_CLASS_DATA,
             0x00,
             0x00)?;
