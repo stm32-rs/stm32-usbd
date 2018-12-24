@@ -157,8 +157,7 @@ impl Endpoint {
         let reg = self.reg();
 
         match reg.read().stat_tx().bits().into() {
-            EndpointStatus::Valid => return Err(UsbError::WouldBlock),
-            EndpointStatus::Disabled => return Err(UsbError::InvalidEndpoint),
+            EndpointStatus::Valid | EndpointStatus::Disabled => return Err(UsbError::WouldBlock),
             _ => {},
         };
 
@@ -200,11 +199,7 @@ impl Endpoint {
 
         let status: EndpointStatus = reg_v.stat_rx().bits().into();
 
-        if status == EndpointStatus::Disabled {
-            return Err(UsbError::InvalidEndpoint);
-        }
-
-        if !reg_v.ctr_rx().bit_is_set() {
+        if status == EndpointStatus::Disabled || !reg_v.ctr_rx().bit_is_set() {
             return Err(UsbError::WouldBlock);
         }
 
