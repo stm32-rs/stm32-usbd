@@ -1,6 +1,5 @@
 // Minimal CDC-ACM implementation for the examples - this will eventually be a real crate!
 
-use core::cell::{Cell, RefCell};
 use core::cmp::min;
 use usb_device::class_prelude::*;
 use usb_device::Result;
@@ -19,20 +18,15 @@ const CDC_TYPE_UNION: u8 = 0x06;
 const REQ_SET_LINE_CODING: u8 = 0x20;
 const REQ_SET_CONTROL_LINE_STATE: u8 = 0x22;
 
-struct Buf {
-    buf: [u8; 64],
-    len: usize,
-}
-
 pub struct SerialPort<'a, B: UsbBus + Sync> {
     comm_if: InterfaceNumber,
     comm_ep: EndpointIn<'a, B>,
     data_if: InterfaceNumber,
     read_ep: EndpointOut<'a, B>,
     write_ep: EndpointIn<'a, B>,
-
-    read_buf: RefCell<Buf>,
-    need_zlp: Cell<bool>,
+    buf: [u8; 64],
+    len: usize,
+    need_zlp: bool,
 }
 
 impl<B: UsbBus + Sync> SerialPort<'_, B> {
@@ -43,21 +37,19 @@ impl<B: UsbBus + Sync> SerialPort<'_, B> {
             data_if: alloc.interface(),
             read_ep: alloc.bulk(64),
             write_ep: alloc.bulk(64),
-            read_buf: RefCell::new(Buf {
-                buf: [0; 64],
-                len: 0,
-            }),
-            need_zlp: Cell::new(false),
+            buf: [0; 64],
+            len: 0,
+            need_zlp: false,
         }
     }
 
-    pub fn write(&self, data: &[u8]) -> Result<usize> {
-        if self.need_zlp.get() {
+    pub fn write(&mut self, data: &[u8]) -> Result<usize> {
+        if self.need_zlp {
             return Ok(0);
         }
 
         if data.len() == 64 {
-            self.need_zlp.set(true);
+            self.need_zlp = true;
         }
 
         match self.write_ep.write(data) {
@@ -67,25 +59,23 @@ impl<B: UsbBus + Sync> SerialPort<'_, B> {
         }
     }
 
-    pub fn read(&self, data: &mut [u8]) -> Result<usize> {
-        let mut buf = self.read_buf.borrow_mut();
-
+    pub fn read(&mut self, data: &mut [u8]) -> Result<usize> {
         // Terrible buffering implementation for brevity's sake
 
-        if buf.len == 0 {
-            buf.len = match self.read_ep.read(&mut buf.buf) {
+        if self.len == 0 {
+            self.len = match self.read_ep.read(&mut self.buf) {
                 Ok(0) | Err(UsbError::WouldBlock) => return Ok(0),
                 Ok(count) => count,
                 e => return e,
             };
         }
 
-        let count = min(data.len(), buf.len);
+        let count = min(data.len(), self.len);
 
-        &data[..count].copy_from_slice(&buf.buf[0..count]);
+        &data[..count].copy_from_slice(&self.buf[0..count]);
 
-        buf.buf.rotate_left(count);
-        buf.len -= count;
+        self.buf.rotate_left(count);
+        self.len -= count;
 
         Ok(count)
     }
@@ -129,14 +119,14 @@ impl<B: UsbBus + Sync> UsbClass<B> for SerialPort<'_, B> {
         Ok(())
     }
 
-    fn endpoint_in_complete(&self, addr: EndpointAddress) {
-        if self.need_zlp.get() && addr == self.write_ep.address() {
-            self.need_zlp.set(false);
+    fn endpoint_in_complete(&mut self, addr: EndpointAddress) {
+        if self.need_zlp && addr == self.write_ep.address() {
+            self.need_zlp = false;
             self.write_ep.write(&[]).ok();
         }
     }
 
-    fn control_out(&self, xfer: ControlOut<B>) {
+    fn control_out(&mut self, xfer: ControlOut<B>) {
         let req = *xfer.request();
 
         if req.request_type == control::RequestType::Class

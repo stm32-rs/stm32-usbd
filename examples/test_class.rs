@@ -30,14 +30,14 @@ fn main() -> ! {
         dp.USB, &mut rcc.apb1,
         &clocks, &mut gpioa.crh, gpioa.pa12);
 
-    let test = TestClass::new(&usb_bus);
+    let mut test = TestClass::new(&usb_bus);
 
-    let mut usb_dev = test.make_device(&usb_bus);
+    let mut usb_dev = { test.make_device(&usb_bus) };
 
     usb_dev.force_reset().expect("reset failed");
 
     loop {
-        if usb_dev.poll() {
+        if usb_dev.poll(&mut [&mut test]) {
             test.poll();
         }
     }

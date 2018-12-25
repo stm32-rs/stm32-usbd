@@ -31,9 +31,9 @@ fn main() -> ! {
     let usb_bus = UsbBus::usb_with_reset(dp.USB,
         &mut rcc.apb1, &clocks, &mut gpioa.crh, gpioa.pa12);
 
-    let serial = cdc_acm::SerialPort::new(&usb_bus);
+    let mut serial = cdc_acm::SerialPort::new(&usb_bus);
 
-    let mut usb_dev = UsbDevice::new(&usb_bus, UsbVidPid(0x5824, 0x27dd), &[&serial])
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x5824, 0x27dd))
         .manufacturer("Fake company")
         .product("Serial port")
         .serial_number("TEST")
@@ -43,7 +43,7 @@ fn main() -> ! {
     usb_dev.force_reset().expect("reset failed");
 
     loop {
-        if !usb_dev.poll() {
+        if !usb_dev.poll(&mut [&mut serial]) {
             continue;
         }
 
