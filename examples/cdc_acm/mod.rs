@@ -1,4 +1,5 @@
-// Minimal CDC-ACM implementation for the examples - this will eventually be a real crate!
+/// Minimal and incomplete CDC-ACM implementation for the examples - this will eventually be a real
+/// crate!
 
 use core::cmp::min;
 use usb_device::class_prelude::*;
@@ -18,7 +19,7 @@ const CDC_TYPE_UNION: u8 = 0x06;
 const REQ_SET_LINE_CODING: u8 = 0x20;
 const REQ_SET_CONTROL_LINE_STATE: u8 = 0x22;
 
-pub struct SerialPort<'a, B: UsbBus + Sync> {
+pub struct SerialPort<'a, B: UsbBus> {
     comm_if: InterfaceNumber,
     comm_ep: EndpointIn<'a, B>,
     data_if: InterfaceNumber,
@@ -29,7 +30,7 @@ pub struct SerialPort<'a, B: UsbBus + Sync> {
     need_zlp: bool,
 }
 
-impl<B: UsbBus + Sync> SerialPort<'_, B> {
+impl<B: UsbBus> SerialPort<'_, B> {
     pub fn new(alloc: &UsbBusAllocator<B>) -> SerialPort<'_, B> {
         SerialPort {
             comm_if: alloc.interface(),
@@ -81,7 +82,7 @@ impl<B: UsbBus + Sync> SerialPort<'_, B> {
     }
 }
 
-impl<B: UsbBus + Sync> UsbClass<B> for SerialPort<'_, B> {
+impl<B: UsbBus> UsbClass<B> for SerialPort<'_, B> {
     fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<()> {
         writer.interface(
             self.comm_if,

@@ -14,4 +14,5 @@ usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "1e74bc8a
 
 [dev-dependencies]
 cortex-m-rt = "0.6.7"
+cortex-m-rtfm = "0.4.0"
 panic-semihosting = "0.5.1"

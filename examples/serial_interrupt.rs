@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+/// CDC-ACM serial port example using interrupts.
+
 extern crate panic_semihosting;
 
 use cortex_m::asm::wfi;

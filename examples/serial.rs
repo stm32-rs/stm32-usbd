@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+/// CDC-ACM serial port example using polling in a busy loop.
+
 extern crate panic_semihosting;
 
 use cortex_m_rt::entry;
