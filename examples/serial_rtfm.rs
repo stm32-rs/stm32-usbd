@@ -9,13 +9,13 @@ extern crate panic_semihosting;
 mod cdc_acm;
 
 use rtfm::app;
-use stm32f103xx_hal::prelude::*;
+use stm32f1xx_hal::prelude::*;
 
 use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
 use usb_device::bus;
 
-#[app(device = stm32f103xx)]
+#[app(device = stm32f1xx_hal::stm32)]
 const APP: () = {
 
     static mut USB_DEV: UsbDevice<'static, UsbBus> = ();
@@ -60,12 +60,12 @@ const APP: () = {
     }
 
     #[interrupt(resources = [USB_DEV, SERIAL])]
-    fn CAN1_TX() {
+    fn USB_HP_CAN_TX() {
         usb_poll(&mut resources.USB_DEV, &mut resources.SERIAL);
     }
 
     #[interrupt(resources = [USB_DEV, SERIAL])]
-    fn CAN1_RX0() {
+    fn USB_LP_CAN_RX0() {
         usb_poll(&mut resources.USB_DEV, &mut resources.SERIAL);
     }
 };

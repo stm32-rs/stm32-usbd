@@ -3,7 +3,7 @@ use core::mem;
 use bare_metal::CriticalSection;
 use vcell::VolatileCell;
 use cortex_m::interrupt;
-use stm32f103xx::{USB, usb};
+use stm32f1xx_hal::stm32::{USB, usb};
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
 use crate::atomic_mutex::AtomicMutex;

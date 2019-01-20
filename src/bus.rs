@@ -6,10 +6,10 @@ use usb_device::bus::{UsbBusAllocator, PollResult};
 use usb_device::endpoint::{EndpointType, EndpointAddress};
 use cortex_m::asm::delay;
 use cortex_m::interrupt;
-use stm32f103xx::USB;
-use stm32f103xx_hal::prelude::*;
-use stm32f103xx_hal::rcc;
-use stm32f103xx_hal::gpio::{self, gpioa};
+use stm32f1xx_hal::prelude::*;
+use stm32f1xx_hal::rcc;
+use stm32f1xx_hal::gpio::{self, gpioa};
+use stm32f1xx_hal::stm32::{USB, RCC};
 use crate::atomic_mutex::AtomicMutex;
 use crate::endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
 
@@ -34,8 +34,7 @@ impl UsbBus {
 
         let _ = apb1;
         interrupt::free(|_| {
-            let dp = unsafe { ::stm32f103xx::Peripherals::steal() };
-            dp.RCC.apb1enr.modify(|_, w| w.usben().enabled());
+            unsafe { (&*RCC::ptr()) }.apb1enr.modify(|_, w| w.usben().set_bit());
         });
 
         let bus = UsbBus {

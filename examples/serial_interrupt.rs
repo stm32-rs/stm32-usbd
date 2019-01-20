@@ -7,8 +7,8 @@ extern crate panic_semihosting;
 
 use cortex_m::asm::wfi;
 use cortex_m_rt::entry;
-use stm32f103xx::{interrupt, Interrupt};
-use stm32f103xx_hal::prelude::*;
+use stm32f1xx_hal::{prelude::*, stm32};
+use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 
 use usb_device::{prelude::*, bus::UsbBusAllocator};
 use stm32f103xx_usb::UsbBus;
@@ -22,7 +22,7 @@ static mut USB_DEVICE: Option<UsbDevice<UsbBus>> = None;
 #[entry]
 fn main() -> ! {
     let p = cortex_m::Peripherals::take().unwrap();
-    let dp = stm32f103xx::Peripherals::take().unwrap();
+    let dp = stm32::Peripherals::take().unwrap();
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
@@ -62,19 +62,19 @@ fn main() -> ! {
 
     let mut nvic = p.NVIC;
 
-    nvic.enable(Interrupt::CAN1_TX);
-    nvic.enable(Interrupt::CAN1_RX0);
+    nvic.enable(Interrupt::USB_HP_CAN_TX);
+    nvic.enable(Interrupt::USB_LP_CAN_RX0);
 
     loop { wfi(); }
 }
 
 #[interrupt]
-fn CAN1_TX() {
+fn USB_HP_CAN_TX() {
     usb_interrupt();
 }
 
 #[interrupt]
-fn CAN1_RX0() {
+fn USB_LP_CAN_RX0() {
     usb_interrupt();
 }
 

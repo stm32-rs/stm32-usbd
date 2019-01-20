@@ -6,7 +6,7 @@
 extern crate panic_semihosting;
 
 use cortex_m_rt::entry;
-use stm32f103xx_hal::prelude::*;
+use stm32f1xx_hal::{prelude::*, stm32};
 
 use usb_device::prelude::*;
 use stm32f103xx_usb::UsbBus;
@@ -15,7 +15,7 @@ mod cdc_acm;
 
 #[entry]
 fn main() -> ! {
-    let dp = stm32f103xx::Peripherals::take().unwrap();
+    let dp = stm32::Peripherals::take().unwrap();
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
