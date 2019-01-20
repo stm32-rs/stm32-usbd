@@ -1,5 +1,6 @@
 #![no_main]
 #![no_std]
+#![allow(non_snake_case)]
 
 /// CDC-ACM serial port example using cortex-m-rtfm.
 
@@ -16,6 +17,7 @@ use usb_device::bus;
 
 #[app(device = stm32f103xx)]
 const APP: () = {
+
     static mut USB_DEV: UsbDevice<'static, UsbBus> = ();
     static mut SERIAL: cdc_acm::SerialPort<'static, UsbBus> = ();
 
@@ -40,7 +42,7 @@ const APP: () = {
             device.USB, &mut rcc.apb1,
             &clocks, &mut gpioa.crh, gpioa.pa12));
 
-        let mut serial = cdc_acm::SerialPort::new(USB_BUS.as_ref().unwrap());
+        let serial = cdc_acm::SerialPort::new(USB_BUS.as_ref().unwrap());
 
         let mut usb_dev = UsbDeviceBuilder::new(
                 USB_BUS.as_ref().unwrap(),
