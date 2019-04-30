@@ -8,7 +8,7 @@ authors = ["Matti Virkkunen <mvirkkunen@gmail.com>"]
 bare-metal = "0.2.4"
 vcell = "0.1.0"
 cortex-m = "0.5.8"
-stm32f1xx-hal = { version = "0.2", features = ["stm32f103", "rt"] }
+stm32f1xx-hal = { version = "0.3", features = ["stm32f103", "rt"] }
 usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3" }
 
 [dev-dependencies]

@@ -248,13 +248,11 @@ impl Endpoint {
     }*/
 
     fn clear_toggle_bits(w: &mut usb::epr::W) -> &mut usb::epr::W {
-        unsafe {
-            w
-                .dtog_rx().clear_bit()
-                .dtog_tx().clear_bit()
-                .stat_rx().bits(0)
-                .stat_tx().bits(0)
-        }
+        w
+            .dtog_rx().clear_bit()
+            .dtog_tx().clear_bit()
+            .stat_rx().bits(0)
+            .stat_tx().bits(0)
     }
 
     pub fn clear_ctr_rx(&self, _cs: &CriticalSection) {
@@ -266,14 +264,14 @@ impl Endpoint {
     }
 
     pub fn set_stat_rx(&self, _cs: &CriticalSection, status: EndpointStatus) {
-        self.reg().modify(|r, w| unsafe {
+        self.reg().modify(|r, w| {
             Self::clear_toggle_bits(w)
                 .stat_rx().bits(r.stat_rx().bits() ^ (status as u8))
         });
     }
 
     pub fn set_stat_tx(&self, _cs: &CriticalSection, status: EndpointStatus) {
-        self.reg().modify(|r, w| unsafe {
+        self.reg().modify(|r, w| {
             Self::clear_toggle_bits(w)
                 .stat_tx().bits(r.stat_tx().bits() ^ (status as u8))
         });
