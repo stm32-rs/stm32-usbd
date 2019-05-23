@@ -164,8 +164,6 @@ impl usb_device::bus::UsbBus for UsbBus {
                 .resetm().set_bit()
                 .suspm().set_bit()
                 .wkupm().set_bit()
-                .errm().set_bit()
-                .pmaovrm().set_bit()
                 .ctrm().set_bit());
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
         });
@@ -203,7 +201,9 @@ impl usb_device::bus::UsbBus for UsbBus {
         let istr = regs.istr.read();
 
         if istr.wkup().bit_is_set() {
-            regs.istr.modify(|_, w| w.wkup().clear_bit());
+            // Interrupt flag bits are write-0-to-clear, other bits should be written as 1 to avoid
+            // race conditions
+            regs.istr.write(|w| unsafe { w.bits(0xffff) }.wkup().clear_bit() );
 
             let fnr = regs.fnr.read();
             //let bits = (fnr.rxdp().bit_is_set() as u8) << 1 | (fnr.rxdm().bit_is_set() as u8);
@@ -218,11 +218,11 @@ impl usb_device::bus::UsbBus for UsbBus {
                 }
             }
         } else if istr.reset().bit_is_set() {
-            regs.istr.modify(|_, w| w.reset().clear_bit());
+            regs.istr.write(|w| unsafe { w.bits(0xffff) }.reset().clear_bit() );
 
             PollResult::Reset
         } else if istr.susp().bit_is_set() {
-            regs.istr.modify(|_, w| w.susp().clear_bit());
+            regs.istr.write(|w| unsafe { w.bits(0xffff) }.susp().clear_bit() );
 
             PollResult::Suspend
         } else if istr.ctr().bit_is_set() {
