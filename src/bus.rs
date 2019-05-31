@@ -6,16 +6,18 @@ use usb_device::bus::{UsbBusAllocator, PollResult};
 use usb_device::endpoint::{EndpointType, EndpointAddress};
 use cortex_m::asm::delay;
 use cortex_m::interrupt;
-use stm32f1xx_hal::prelude::*;
-use stm32f1xx_hal::rcc;
-use stm32f1xx_hal::gpio::{self, gpioa};
-use stm32f1xx_hal::stm32::{USB, RCC};
+
+use crate::target::hal::rcc;
+use crate::target::hal::stm32::USB;
+use crate::target::{APB, apb_usb_enable};
 use crate::atomic_mutex::AtomicMutex;
 use crate::endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
 
+pub use crate::target::ResetPin;
+
 struct Reset {
     delay: u32,
-    pin: Mutex<RefCell<gpioa::PA12<gpio::Output<gpio::PushPull>>>>,
+    pin: Mutex<RefCell<ResetPin>>,
 }
 
 /// USB peripheral driver for STM32F103 microcontrollers.
@@ -28,14 +30,11 @@ pub struct UsbBus {
 }
 
 impl UsbBus {
-    fn new(regs: USB, apb1: &mut rcc::APB1, reset: Option<Reset>) -> UsbBusAllocator<Self> {
-        // TODO: apb1.enr is not public, figure out how this should really interact with the HAL
+    fn new(regs: USB, apb: &mut APB, reset: Option<Reset>) -> UsbBusAllocator<Self> {
+        // TODO: apb.enr is not public, figure out how this should really interact with the HAL
         // crate
 
-        let _ = apb1;
-        interrupt::free(|_| {
-            unsafe { (&*RCC::ptr()) }.apb1enr.modify(|_, w| w.usben().set_bit());
-        });
+        apb_usb_enable(apb);
 
         let bus = UsbBus {
             regs: AtomicMutex::new(regs),
@@ -57,24 +56,24 @@ impl UsbBus {
     }
 
     /// Constructs a new USB peripheral driver.
-    pub fn usb(regs: USB, apb1: &mut rcc::APB1) -> UsbBusAllocator<Self> {
-        UsbBus::new(regs, apb1, None)
+    pub fn usb(regs: USB, apb: &mut APB) -> UsbBusAllocator<Self> {
+        UsbBus::new(regs, apb, None)
     }
 
     /// Constructs a new USB peripheral driver with the "reset" method enabled.
-    pub fn usb_with_reset<M>(
+    pub fn usb_with_reset(
         regs: USB,
-        apb1: &mut rcc::APB1,
+        apb: &mut APB,
         clocks: &rcc::Clocks,
-        crh: &mut gpioa::CRH,
-        pa12: gpioa::PA12<M>) -> UsbBusAllocator<Self>
+        reset_pin: ResetPin
+    ) -> UsbBusAllocator<Self>
     {
         UsbBus::new(
             regs,
-            apb1,
+            apb,
             Some(Reset {
                 delay: clocks.sysclk().0,
-                pin: Mutex::new(RefCell::new(pa12.into_push_pull_output(crh))),
+                pin: Mutex::new(RefCell::new(reset_pin)),
             }))
     }
 
@@ -158,7 +157,7 @@ impl usb_device::bus::UsbBus for UsbBus {
             // at least that long.
             delay(72);
 
-            regs.btable.modify(|_, w| w.btable().bits(0));
+            regs.btable.modify(|_, w| unsafe { w.btable().bits(0) });
             regs.cntr.modify(|_, w| w
                 .fres().clear_bit()
                 .resetm().set_bit()
@@ -174,7 +173,7 @@ impl usb_device::bus::UsbBus for UsbBus {
             let regs = self.regs.lock(cs);
 
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
-            regs.daddr.modify(|_, w| w.ef().set_bit().add().bits(0));
+            regs.daddr.modify(|_, w| unsafe { w.ef().set_bit().add().bits(0) });
 
             for ep in self.endpoints.iter() {
                 ep.configure(cs);
@@ -184,7 +183,7 @@ impl usb_device::bus::UsbBus for UsbBus {
 
     fn set_device_address(&self, addr: u8) {
         interrupt::free(|cs| {
-            self.regs.lock(cs).daddr.modify(|_, w| w.add().bits(addr as u8));
+            self.regs.lock(cs).daddr.modify(|_, w| unsafe { w.add().bits(addr as u8) });
         });
     }
 

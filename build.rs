@@ -2,7 +2,7 @@ use std::env;
 
 fn main() {
     let families: Vec<_> = env::vars().filter_map(|(key, _value)| {
-        if key.starts_with("CARGO_FEATURE_STM32") {
+        if key.starts_with("CARGO_FEATURE_STM32") && !key.ends_with("HAL") {
             Some(key[14..].to_ascii_lowercase())  // Strip 'CARGO_FEATURE_'
         } else {
             None
@@ -13,7 +13,7 @@ fn main() {
         panic!("No family features selected");
     }
     if families.len() > 1 {
-        panic!("More than one family feature selected");
+        panic!("More than one family feature selected: {:?}", families);
     }
 
     let family = families.first().unwrap();
@@ -32,7 +32,15 @@ fn main() {
             bcd_support = false;
             dp_pull_up_support = false;
             peripheral_bus = "apb1";
-        }
+        },
+        "stm32l4x2xx" => {
+            buffer_size = 1024;
+            access_scheme = "2x16";
+            lpm_support = true;
+            bcd_support = true;
+            dp_pull_up_support = true;
+            peripheral_bus = "apb";
+        },
         other => panic!("Unknown family: {}", other),
     }
 
