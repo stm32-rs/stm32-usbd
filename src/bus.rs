@@ -9,9 +9,9 @@ use cortex_m::interrupt;
 
 use crate::target::hal::rcc;
 use crate::target::hal::stm32::USB;
-use crate::target::{APB, apb_usb_enable, EP_MEM_SIZE};
+use crate::target::{APB, apb_usb_enable, EP_MEM_SIZE, NUM_ENDPOINTS};
 use crate::atomic_mutex::AtomicMutex;
-use crate::endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
+use crate::endpoint::{Endpoint, EndpointStatus, calculate_count_rx};
 
 pub use crate::target::ResetPin;
 

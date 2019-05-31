@@ -40,10 +40,17 @@ pub type UsbAccessType = u32;
 #[cfg(usb_access_scheme = "2x16")]
 pub type UsbAccessType = u16;
 
+
+pub const EP_MEM_ADDR: usize = 0x4000_6000;
+
+
 #[cfg(usb_buffer_size = "512")]
 pub const EP_MEM_SIZE: usize = 512;
 #[cfg(usb_buffer_size = "1024")]
 pub const EP_MEM_SIZE: usize = 1024;
+
+
+pub const NUM_ENDPOINTS: usize = 8;
 
 
 // Device-specific bus definition

@@ -1,11 +1,11 @@
 use core::slice;
 use vcell::VolatileCell;
-use crate::target::UsbAccessType;
+use crate::target::{UsbAccessType, EP_MEM_ADDR};
 
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
 impl EndpointBuffer {
-    const MEM_ADDR: *mut VolatileCell<UsbAccessType> = 0x4000_6000 as *mut VolatileCell<UsbAccessType>;
+    const MEM_ADDR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
 
     pub fn new(offset_bytes: usize, size_bytes: usize) -> Self {
         let mem = unsafe {
@@ -64,4 +64,12 @@ impl EndpointBuffer {
     pub fn capacity(&self) -> usize {
         self.0.len() << 1
     }
+}
+
+#[repr(C)]
+pub struct BufferDescriptor {
+    pub addr_tx: VolatileCell<UsbAccessType>,
+    pub count_tx: VolatileCell<UsbAccessType>,
+    pub addr_rx: VolatileCell<UsbAccessType>,
+    pub count_rx: VolatileCell<UsbAccessType>,
 }

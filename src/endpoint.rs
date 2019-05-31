@@ -5,18 +5,9 @@ use cortex_m::interrupt;
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
 use crate::atomic_mutex::AtomicMutex;
-use crate::target::{usb, ep_reg, UsbAccessType};
-use crate::endpoint_memory::EndpointBuffer;
+use crate::target::{usb, ep_reg, UsbAccessType, EP_MEM_ADDR, NUM_ENDPOINTS};
+use crate::endpoint_memory::{EndpointBuffer, BufferDescriptor};
 
-pub const NUM_ENDPOINTS: usize = 8;
-
-#[repr(C)]
-struct BufferDescriptor {
-    pub addr_tx: VolatileCell<UsbAccessType>,
-    pub count_tx: VolatileCell<UsbAccessType>,
-    pub addr_rx: VolatileCell<UsbAccessType>,
-    pub count_rx: VolatileCell<UsbAccessType>,
-}
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]
@@ -49,7 +40,7 @@ pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
 
 impl Endpoint {
     pub const MEM_START: usize = mem::size_of::<BufferDescriptor>() * NUM_ENDPOINTS;
-    const MEM_ADDR: *mut VolatileCell<UsbAccessType> = 0x4000_6000 as *mut VolatileCell<UsbAccessType>;
+    const MEM_ADDR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
 
     pub fn new(index: u8) -> Endpoint {
         Endpoint {
