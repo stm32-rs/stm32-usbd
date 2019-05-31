@@ -9,3 +9,5 @@ set -euxo pipefail
 for family in $families; do
     cargo check --no-default-features --features $family
 done
+
+cargo check --no-default-features --features stm32f103xx --target thumbv7m-none-eabi --examples
