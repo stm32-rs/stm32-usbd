@@ -1,8 +1,8 @@
 [package]
-name = "stm32f103xx-usb"
+name = "stm32-usbd"
 version = "0.1.0"
 edition = "2018"
-authors = ["Matti Virkkunen <mvirkkunen@gmail.com>"]
+authors = ["Matti Virkkunen <mvirkkunen@gmail.com>", "Vadim Kaushan <admin@disasm.info>"]
 
 [dependencies]
 bare-metal = "0.2.4"

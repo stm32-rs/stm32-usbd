@@ -21,7 +21,7 @@ struct Reset {
     pin: Mutex<RefCell<ResetPin>>,
 }
 
-/// USB peripheral driver for STM32F103 microcontrollers.
+/// USB peripheral driver for STM32 microcontrollers.
 pub struct UsbBus {
     regs: AtomicMutex<USB>,
     endpoints: [Endpoint; NUM_ENDPOINTS],
