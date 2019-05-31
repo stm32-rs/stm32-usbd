@@ -35,6 +35,17 @@ pub fn ep_reg(index: u8) -> &'static usb::EPR {
 }
 
 
+#[cfg(usb_access_scheme = "1x16")]
+pub type UsbAccessType = u32;
+#[cfg(usb_access_scheme = "2x16")]
+pub type UsbAccessType = u16;
+
+#[cfg(usb_buffer_size = "512")]
+pub const EP_MEM_SIZE: usize = 512;
+#[cfg(usb_buffer_size = "1024")]
+pub const EP_MEM_SIZE: usize = 1024;
+
+
 // Device-specific bus definition
 #[cfg(feature = "stm32f103xx")]
 pub type APB = hal::rcc::APB1;

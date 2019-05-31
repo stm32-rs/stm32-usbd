@@ -9,7 +9,7 @@ use cortex_m::interrupt;
 
 use crate::target::hal::rcc;
 use crate::target::hal::stm32::USB;
-use crate::target::{APB, apb_usb_enable};
+use crate::target::{APB, apb_usb_enable, EP_MEM_SIZE};
 use crate::atomic_mutex::AtomicMutex;
 use crate::endpoint::{NUM_ENDPOINTS, Endpoint, EndpointStatus, calculate_count_rx};
 
@@ -24,7 +24,7 @@ struct Reset {
 pub struct UsbBus {
     regs: AtomicMutex<USB>,
     endpoints: [Endpoint; NUM_ENDPOINTS],
-    next_ep_mem: usize,
+    next_ep_mem_offset: u16,
     max_endpoint: usize,
     reset: Option<Reset>,
 }
@@ -38,7 +38,7 @@ impl UsbBus {
 
         let bus = UsbBus {
             regs: AtomicMutex::new(regs),
-            next_ep_mem: Endpoint::MEM_START,
+            next_ep_mem_offset: Endpoint::MEM_START as u16,
             max_endpoint: 0,
             endpoints: unsafe {
                 let mut endpoints: [Endpoint; NUM_ENDPOINTS] = mem::uninitialized();
@@ -77,15 +77,16 @@ impl UsbBus {
             }))
     }
 
-    fn alloc_ep_mem(next_ep_mem: &mut usize, size: usize) -> Result<usize> {
+    fn alloc_ep_mem(next_ep_mem: &mut u16, size: usize) -> Result<u16> {
         assert!(size & 1 == 0);
+        assert!(size < EP_MEM_SIZE);
 
         let addr = *next_ep_mem;
-        if addr + size > Endpoint::MEM_SIZE {
+        if addr as usize + size > EP_MEM_SIZE {
             return Err(UsbError::EndpointMemoryOverflow);
         }
 
-        *next_ep_mem += size;
+        *next_ep_mem += size as u16;
 
         Ok(addr)
     }
@@ -113,7 +114,7 @@ impl usb_device::bus::UsbBus for UsbBus {
                 UsbDirection::Out if !ep.is_out_buf_set() => {
                     let (out_size, bits) = calculate_count_rx(max_packet_size as usize)?;
 
-                    let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, out_size)?;
+                    let addr = Self::alloc_ep_mem(&mut self.next_ep_mem_offset, out_size)?;
 
                     ep.set_out_buf(addr, (out_size, bits));
 
@@ -122,7 +123,7 @@ impl usb_device::bus::UsbBus for UsbBus {
                 UsbDirection::In if !ep.is_in_buf_set() => {
                     let size = (max_packet_size as usize + 1) & !0x01;
 
-                    let addr = Self::alloc_ep_mem(&mut self.next_ep_mem, size as usize)?;
+                    let addr = Self::alloc_ep_mem(&mut self.next_ep_mem_offset, size as usize)?;
 
                     ep.set_in_buf(addr, size as usize);
 

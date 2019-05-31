@@ -13,6 +13,7 @@
 //extern crate usb_device;
 
 mod endpoint;
+mod endpoint_memory;
 
 mod atomic_mutex;
 mod target;

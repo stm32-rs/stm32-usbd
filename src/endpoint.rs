@@ -1,4 +1,3 @@
-use core::slice;
 use core::mem;
 use bare_metal::CriticalSection;
 use vcell::VolatileCell;
@@ -6,18 +5,17 @@ use cortex_m::interrupt;
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
 use crate::atomic_mutex::AtomicMutex;
-use crate::target::{usb, ep_reg};
-
-type EndpointBuffer = &'static mut [VolatileCell<u32>];
+use crate::target::{usb, ep_reg, UsbAccessType};
+use crate::endpoint_memory::EndpointBuffer;
 
 pub const NUM_ENDPOINTS: usize = 8;
 
 #[repr(C)]
 struct BufferDescriptor {
-    pub addr_tx: VolatileCell<usize>,
-    pub count_tx: VolatileCell<usize>,
-    pub addr_rx: VolatileCell<usize>,
-    pub count_rx: VolatileCell<usize>,
+    pub addr_tx: VolatileCell<UsbAccessType>,
+    pub count_tx: VolatileCell<UsbAccessType>,
+    pub addr_rx: VolatileCell<UsbAccessType>,
+    pub count_rx: VolatileCell<UsbAccessType>,
 }
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
@@ -51,8 +49,7 @@ pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
 
 impl Endpoint {
     pub const MEM_START: usize = mem::size_of::<BufferDescriptor>() * NUM_ENDPOINTS;
-    pub const MEM_SIZE: usize = 512;
-    const MEM_ADDR: *mut VolatileCell<u32> = 0x4000_6000 as *mut VolatileCell<u32>;
+    const MEM_ADDR: *mut VolatileCell<UsbAccessType> = 0x4000_6000 as *mut VolatileCell<UsbAccessType>;
 
     pub fn new(index: u8) -> Endpoint {
         Endpoint {
@@ -63,16 +60,10 @@ impl Endpoint {
         }
     }
 
-    fn make_buf(addr: usize, size: usize)
-        -> Option<AtomicMutex<&'static mut [VolatileCell<u32>]>>
+    fn make_buf(offset: u16, size: usize)
+        -> Option<AtomicMutex<EndpointBuffer>>
     {
-        Some(AtomicMutex::new(
-            unsafe {
-                slice::from_raw_parts_mut(
-                    Self::MEM_ADDR.offset((addr >> 1) as isize),
-                    size >> 1)
-            }
-        ))
+        Some(AtomicMutex::new(EndpointBuffer::new(offset as usize, size)))
     }
 
     pub fn ep_type(&self) -> Option<EndpointType> {
@@ -87,23 +78,23 @@ impl Endpoint {
         self.out_buf.is_some()
     }
 
-    pub fn set_out_buf(&mut self, addr: usize, size_and_bits: (usize, u16)) {
+    pub fn set_out_buf(&mut self, addr: u16, size_and_bits: (usize, u16)) {
         self.out_buf = Self::make_buf(addr, size_and_bits.0);
 
         let descr = self.descr();
-        descr.addr_rx.set(addr);
-        descr.count_rx.set(size_and_bits.1 as usize);
+        descr.addr_rx.set(addr as UsbAccessType);
+        descr.count_rx.set(size_and_bits.1 as UsbAccessType);
     }
 
     pub fn is_in_buf_set(&self) -> bool {
         self.in_buf.is_some()
     }
 
-    pub fn set_in_buf(&mut self, addr: usize, max_packet_size: usize) {
+    pub fn set_in_buf(&mut self, addr: u16, max_packet_size: usize) {
         self.in_buf = Self::make_buf(addr, max_packet_size);
 
         let descr = self.descr();
-        descr.addr_tx.set(addr);
+        descr.addr_tx.set(addr as UsbAccessType);
         descr.count_tx.set(0);
     }
 
@@ -151,7 +142,7 @@ impl Endpoint {
             None => { return Err(UsbError::WouldBlock); }
         };
 
-        if buf.len() > in_buf.len() << 1 {
+        if buf.len() > in_buf.capacity() {
             return Err(UsbError::BufferOverflow);
         }
 
@@ -162,29 +153,14 @@ impl Endpoint {
             _ => {},
         };
 
-        self.write_mem(in_buf, buf);
-        self.descr().count_tx.set(buf.len());
+        in_buf.write(buf);
+        self.descr().count_tx.set(buf.len() as u16 as UsbAccessType);
 
         interrupt::free(|cs| {
             self.set_stat_tx(cs, EndpointStatus::Valid);
         });
 
         Ok(buf.len())
-    }
-
-    fn write_mem(&self, mem: &[VolatileCell<u32>], mut buf: &[u8]) {
-        let mut addr = 0;
-
-        while buf.len() >= 2 {
-            mem[addr].set((buf[0] as u16 | ((buf[1] as u16) << 8)) as u32);
-            addr += 1;
-
-            buf = &buf[2..];
-        }
-
-        if buf.len() > 0 {
-            mem[addr].set(buf[0] as u32);
-        }
     }
 
     pub fn read(&self, buf: &mut [u8]) -> Result<usize> {
@@ -204,12 +180,12 @@ impl Endpoint {
             return Err(UsbError::WouldBlock);
         }
 
-        let count = self.descr().count_rx.get() & 0x3ff;
+        let count = (self.descr().count_rx.get() & 0x3ff) as usize;
         if count > buf.len() {
             return Err(UsbError::BufferOverflow);
         }
 
-        self.read_mem(out_buf, &mut buf[0..count]);
+        out_buf.read(&mut buf[0..count]);
 
         interrupt::free(|cs| {
             self.clear_ctr_rx(cs);
@@ -217,25 +193,6 @@ impl Endpoint {
         });
 
         Ok(count)
-    }
-
-    fn read_mem(&self, mem: &[VolatileCell<u32>], mut buf: &mut [u8]) {
-        let mut addr = 0;
-
-        while buf.len() >= 2 {
-            let word = mem[addr].get();
-
-            buf[0] = word as u8;
-            buf[1] = (word >> 8) as u8;
-
-            addr += 1;
-
-            buf = &mut {buf}[2..];
-        }
-
-        if buf.len() > 0 {
-            buf[0] = mem[addr].get() as u8;
-        }
     }
 
     pub fn read_reg(&self) -> usb::epr::R {
