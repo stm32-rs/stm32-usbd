@@ -59,22 +59,20 @@ impl Endpoint {
         self.out_buf.is_some()
     }
 
-    pub fn set_out_buf(&mut self, addr: u16, size_and_bits: (usize, u16)) {
-        let buffer = EndpointBuffer::new(addr as usize, size_and_bits.0);
+    pub fn set_out_buf(&mut self, buffer: EndpointBuffer, size_bits: u16) {
         let offset = buffer.offset();
         self.out_buf = Some(AtomicMutex::new(buffer));
 
         let descr = self.descr();
         descr.addr_rx.set(offset as UsbAccessType);
-        descr.count_rx.set(size_and_bits.1 as UsbAccessType);
+        descr.count_rx.set(size_bits as UsbAccessType);
     }
 
     pub fn is_in_buf_set(&self) -> bool {
         self.in_buf.is_some()
     }
 
-    pub fn set_in_buf(&mut self, addr: u16, max_packet_size: usize) {
-        let buffer = EndpointBuffer::new(addr as usize, max_packet_size);
+    pub fn set_in_buf(&mut self, buffer: EndpointBuffer) {
         let offset = buffer.offset();
         self.in_buf = Some(AtomicMutex::new(buffer));
 

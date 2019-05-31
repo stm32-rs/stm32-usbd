@@ -92,7 +92,7 @@ impl EndpointMemoryAllocator {
         }
     }
 
-    pub fn allocate_buffer(&mut self, size: usize) -> Result<u16> {
+    pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
         assert!(size & 1 == 0);
         assert!(size < EP_MEM_SIZE);
 
@@ -103,7 +103,7 @@ impl EndpointMemoryAllocator {
 
         self.next_free_offset += size;
 
-        Ok(offset as u16)
+        Ok(EndpointBuffer::new(offset, size))
     }
 
     pub fn buffer_descriptor(index: u8) -> &'static BufferDescriptor {

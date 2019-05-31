@@ -99,20 +99,20 @@ impl usb_device::bus::UsbBus for UsbBus {
 
             match ep_dir {
                 UsbDirection::Out if !ep.is_out_buf_set() => {
-                    let (out_size, bits) = calculate_count_rx(max_packet_size as usize)?;
+                    let (out_size, size_bits) = calculate_count_rx(max_packet_size as usize)?;
 
-                    let addr = self.ep_allocator.allocate_buffer(out_size)?;
+                    let buffer = self.ep_allocator.allocate_buffer(out_size)?;
 
-                    ep.set_out_buf(addr, (out_size, bits));
+                    ep.set_out_buf(buffer, size_bits);
 
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
                 },
                 UsbDirection::In if !ep.is_in_buf_set() => {
                     let size = (max_packet_size as usize + 1) & !0x01;
 
-                    let addr = self.ep_allocator.allocate_buffer(size)?;
+                    let buffer = self.ep_allocator.allocate_buffer(size)?;
 
-                    ep.set_in_buf(addr, size as usize);
+                    ep.set_in_buf(buffer);
 
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
                 }
