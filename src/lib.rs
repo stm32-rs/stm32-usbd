@@ -5,13 +5,6 @@
 
 #![no_std]
 
-//extern crate bare_metal;
-//extern crate cortex_m;
-//extern crate stm32f103xx;
-//extern crate stm32f103xx_hal;
-//extern crate vcell;
-//extern crate usb_device;
-
 mod endpoint;
 mod endpoint_memory;
 
