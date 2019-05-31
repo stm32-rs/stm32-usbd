@@ -1,4 +1,4 @@
-use core::slice;
+use core::{slice, mem};
 use vcell::VolatileCell;
 use crate::target::{UsbAccessType, EP_MEM_ADDR, EP_MEM_SIZE, NUM_ENDPOINTS};
 use usb_device::{Result, UsbError};
@@ -60,6 +60,12 @@ impl EndpointBuffer {
         if buf.len() > 0 {
             self.write_word(index, buf[0] as u16);
         }
+    }
+
+    pub fn offset(&self) -> usize {
+        let buffer_address = self.0.as_ptr() as usize;
+        let index = (buffer_address - EP_MEM_ADDR) / mem::size_of::<UsbAccessType>();
+        index << 1
     }
 
     pub fn capacity(&self) -> usize {
