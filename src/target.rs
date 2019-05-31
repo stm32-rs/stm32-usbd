@@ -78,6 +78,7 @@ pub fn apb_usb_enable(apb: &mut APB) {
 use hal::prelude::*;
 use hal::gpio::{self, gpioa};
 
+/// Device-dependent wrapper for USB D+ pin
 pub struct ResetPin {
     pin: gpioa::PA12<gpio::Output<gpio::PushPull>>,
 }
