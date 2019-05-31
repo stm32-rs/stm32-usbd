@@ -1,12 +1,11 @@
 use core::mem;
 use bare_metal::CriticalSection;
-use vcell::VolatileCell;
 use cortex_m::interrupt;
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
 use crate::atomic_mutex::AtomicMutex;
-use crate::target::{usb, ep_reg, UsbAccessType, EP_MEM_ADDR, NUM_ENDPOINTS};
-use crate::endpoint_memory::{EndpointBuffer, BufferDescriptor};
+use crate::target::{usb, ep_reg, UsbAccessType};
+use crate::endpoint_memory::{EndpointBuffer, BufferDescriptor, EndpointMemoryAllocator};
 
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
@@ -39,9 +38,6 @@ pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
 }
 
 impl Endpoint {
-    pub const MEM_START: usize = mem::size_of::<BufferDescriptor>() * NUM_ENDPOINTS;
-    const MEM_ADDR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
-
     pub fn new(index: u8) -> Endpoint {
         Endpoint {
             out_buf: None,
@@ -49,12 +45,6 @@ impl Endpoint {
             ep_type: None,
             index,
         }
-    }
-
-    fn make_buf(offset: u16, size: usize)
-        -> Option<AtomicMutex<EndpointBuffer>>
-    {
-        Some(AtomicMutex::new(EndpointBuffer::new(offset as usize, size)))
     }
 
     pub fn ep_type(&self) -> Option<EndpointType> {
@@ -70,7 +60,8 @@ impl Endpoint {
     }
 
     pub fn set_out_buf(&mut self, addr: u16, size_and_bits: (usize, u16)) {
-        self.out_buf = Self::make_buf(addr, size_and_bits.0);
+        let buffer = EndpointBuffer::new(addr as usize, size_and_bits.0);
+        self.out_buf = Some(AtomicMutex::new(buffer));
 
         let descr = self.descr();
         descr.addr_rx.set(addr as UsbAccessType);
@@ -82,7 +73,8 @@ impl Endpoint {
     }
 
     pub fn set_in_buf(&mut self, addr: u16, max_packet_size: usize) {
-        self.in_buf = Self::make_buf(addr, max_packet_size);
+        let buffer = EndpointBuffer::new(addr as usize, max_packet_size);
+        self.in_buf = Some(AtomicMutex::new(buffer));
 
         let descr = self.descr();
         descr.addr_tx.set(addr as UsbAccessType);
@@ -90,7 +82,7 @@ impl Endpoint {
     }
 
     fn descr(&self) -> &'static BufferDescriptor {
-        unsafe { &*(Self::MEM_ADDR as *const BufferDescriptor).offset(self.index as isize) }
+        EndpointMemoryAllocator::buffer_descriptor(self.index)
     }
 
     fn reg(&self) -> &'static usb::EPR {
