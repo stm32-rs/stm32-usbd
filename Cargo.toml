@@ -9,7 +9,7 @@ bare-metal = "0.2.4"
 vcell = "0.1.0"
 cortex-m = "0.5.8"
 stm32f1xx-hal = { version = "0.3", features = ["rt"], optional = true }
-stm32l4xx-hal = { stm32l4xx-hal = "0.4.0", features = ["rt"], optional = true }
+stm32l4xx-hal = { version = "0.4", features = ["rt"], optional = true }
 usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3" }
 
 [dev-dependencies]
