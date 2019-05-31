@@ -7,7 +7,7 @@ use cortex_m_rt::entry;
 use stm32f1xx_hal::{prelude::*, stm32};
 
 use usb_device::test_class::TestClass;
-use stm32f103xx_usb::UsbBus;
+use stm32f103xx_usb::{UsbBus, ResetPin};
 
 #[entry]
 fn main() -> ! {
@@ -26,9 +26,11 @@ fn main() -> ! {
 
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
 
+    let reset_pin = ResetPin::new(gpioa.pa12, &mut gpioa.crh);
+
     let usb_bus = UsbBus::usb_with_reset(
         dp.USB, &mut rcc.apb1,
-        &clocks, &mut gpioa.crh, gpioa.pa12);
+        &clocks, reset_pin);
 
     let mut test = TestClass::new(&usb_bus);
 

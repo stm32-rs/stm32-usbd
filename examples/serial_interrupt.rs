@@ -11,7 +11,7 @@ use stm32f1xx_hal::{prelude::*, stm32};
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 
 use usb_device::{prelude::*, bus::UsbBusAllocator};
-use stm32f103xx_usb::UsbBus;
+use stm32f103xx_usb::{UsbBus, ResetPin};
 
 mod cdc_acm;
 
@@ -37,10 +37,12 @@ fn main() -> ! {
 
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
 
+    let reset_pin = ResetPin::new(gpioa.pa12, &mut gpioa.crh);
+
     // Unsafe to allow access to static variables
     unsafe {
         let bus = UsbBus::usb_with_reset(dp.USB,
-            &mut rcc.apb1, &clocks, &mut gpioa.crh, gpioa.pa12);
+            &mut rcc.apb1, &clocks, reset_pin);
 
         USB_BUS = Some(bus);
 

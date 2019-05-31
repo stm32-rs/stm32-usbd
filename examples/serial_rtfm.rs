@@ -12,7 +12,7 @@ use rtfm::app;
 use stm32f1xx_hal::prelude::*;
 
 use usb_device::prelude::*;
-use stm32f103xx_usb::UsbBus;
+use stm32f103xx_usb::{UsbBus, ResetPin};
 use usb_device::bus;
 
 #[app(device = stm32f1xx_hal::stm32)]
@@ -38,9 +38,11 @@ const APP: () = {
 
         let mut gpioa = device.GPIOA.split(&mut rcc.apb2);
 
+        let reset_pin = ResetPin::new(gpioa.pa12, &mut gpioa.crh);
+
         *USB_BUS = Some(UsbBus::usb_with_reset(
             device.USB, &mut rcc.apb1,
-            &clocks, &mut gpioa.crh, gpioa.pa12));
+            &clocks, reset_pin));
 
         let serial = cdc_acm::SerialPort::new(USB_BUS.as_ref().unwrap());
 
