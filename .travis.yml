@@ -6,5 +6,8 @@ rust:
 
 cache: cargo
 
+install:
+  - ci/install.sh
+
 script:
   - ci/script.sh
