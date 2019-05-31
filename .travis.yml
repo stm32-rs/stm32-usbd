@@ -4,12 +4,6 @@ rust:
   - nightly
   - stable
 
-branches:
-  only:
-    - master
-    - staging
-    - trying
-
 cache: cargo
 
 script:
