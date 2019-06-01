@@ -23,7 +23,6 @@ fn main() {
     let lpm_support;
     let bcd_support;
     let dp_pull_up_support;
-    let peripheral_bus;
     match family.as_str() {
         "stm32f103xx" => {
             buffer_size = 512;
@@ -31,7 +30,6 @@ fn main() {
             lpm_support = false;
             bcd_support = false;
             dp_pull_up_support = false;
-            peripheral_bus = "apb1";
         },
         "stm32l4x2xx" => {
             buffer_size = 1024;
@@ -39,7 +37,6 @@ fn main() {
             lpm_support = true;
             bcd_support = true;
             dp_pull_up_support = true;
-            peripheral_bus = "apb";
         },
         other => panic!("Unknown family: {}", other),
     }
@@ -55,5 +52,4 @@ fn main() {
     if dp_pull_up_support {
         println!("cargo:rustc-cfg=usb_dp_pull_up_support");
     }
-    println!("cargo:rustc-cfg=usb_peripheral_bus=\"{}\"", peripheral_bus);
 }
