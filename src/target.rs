@@ -3,14 +3,14 @@
 // Export HAL
 #[cfg(feature = "stm32f103xx")]
 pub use stm32f1xx_hal as hal;
-#[cfg(feature = "stm32l4x2xx")]
+#[cfg(any(feature = "stm32l4x2xx", feature = "stm32l4x2xx-latest"))]
 pub use stm32l4xx_hal as hal;
 
 
 // USB PAC reexports
-#[cfg(feature = "stm32f103xx")]
+#[cfg(not(feature = "pac_ep_hack"))]
 pub use hal::stm32::usb;
-#[cfg(feature = "stm32l4x2xx")]
+#[cfg(feature = "pac_ep_hack")]
 pub mod usb {
     pub use super::hal::stm32::usb::EP0R as EPR;
     pub use super::hal::stm32::usb::ep0r as epr;
@@ -22,9 +22,9 @@ pub fn ep_reg(index: u8) -> &'static usb::EPR {
     unsafe {
         let usb = &(*hal::stm32::USB::ptr());
         match () {
-            #[cfg(feature = "stm32f103xx")]
+            #[cfg(not(feature = "pac_ep_hack"))]
             () => &usb.epr[index as usize],
-            #[cfg(feature = "stm32l4x2xx")]
+            #[cfg(feature = "pac_ep_hack")]
             () => {
                 let ep0r_ptr: *const usb::EPR = &usb.ep0r;
                 &*ep0r_ptr.offset(index as isize)
