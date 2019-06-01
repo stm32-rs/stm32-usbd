@@ -10,7 +10,6 @@ pub use stm32l4xx_hal as hal;
 // USB PAC reexports
 #[cfg(feature = "stm32f103xx")]
 pub use hal::stm32::usb;
-use cortex_m::interrupt;
 #[cfg(feature = "stm32l4x2xx")]
 pub mod usb {
     pub use super::hal::stm32::usb::EP0R as EPR;
@@ -66,7 +65,7 @@ pub type APB = hal::rcc::APB1R1;
 /// Enables USB peripheral
 pub fn apb_usb_enable(apb: &mut APB) {
     let _ = apb;
-    interrupt::free(|_| {
+    cortex_m::interrupt::free(|_| {
         let rcc = unsafe { (&*hal::stm32::RCC::ptr()) };
         match () {
             #[cfg(feature = "stm32f103xx")]
