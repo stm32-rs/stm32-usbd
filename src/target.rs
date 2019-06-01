@@ -3,7 +3,7 @@
 // Export HAL
 #[cfg(feature = "stm32f103xx")]
 pub use stm32f1xx_hal as hal;
-#[cfg(any(feature = "stm32l4x2xx", feature = "stm32l4x2xx-latest"))]
+#[cfg(feature = "stm32l4x2xx")]
 pub use stm32l4xx_hal as hal;
 
 
