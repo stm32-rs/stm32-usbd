@@ -12,7 +12,7 @@ use rtfm::app;
 use stm32f1xx_hal::prelude::*;
 
 use usb_device::prelude::*;
-use stm32f103xx_usb::{UsbBus, ResetPin};
+use stm32_usbd::{UsbBus, ResetPin};
 use usb_device::bus;
 
 #[app(device = stm32f1xx_hal::stm32)]

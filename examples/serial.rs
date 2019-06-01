@@ -9,7 +9,7 @@ use cortex_m_rt::entry;
 use stm32f1xx_hal::{prelude::*, stm32};
 
 use usb_device::prelude::*;
-use stm32f103xx_usb::{UsbBus, ResetPin};
+use stm32_usbd::{UsbBus, ResetPin};
 
 mod cdc_acm;
 

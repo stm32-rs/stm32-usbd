@@ -11,7 +11,7 @@ use stm32f1xx_hal::{prelude::*, stm32};
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 
 use usb_device::{prelude::*, bus::UsbBusAllocator};
-use stm32f103xx_usb::{UsbBus, ResetPin};
+use stm32_usbd::{UsbBus, ResetPin};
 
 mod cdc_acm;
 
