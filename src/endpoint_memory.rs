@@ -3,15 +3,15 @@ use vcell::VolatileCell;
 use crate::target::{UsbAccessType, EP_MEM_ADDR, EP_MEM_SIZE, NUM_ENDPOINTS};
 use usb_device::{Result, UsbError};
 
+const EP_MEM_PTR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
+
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
 impl EndpointBuffer {
-    const MEM_ADDR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
-
     pub fn new(offset_bytes: usize, size_bytes: usize) -> Self {
         let mem = unsafe {
             slice::from_raw_parts_mut(
-                Self::MEM_ADDR.offset((offset_bytes >> 1) as isize),
+                EP_MEM_PTR.offset((offset_bytes >> 1) as isize),
                 size_bytes >> 1)
         };
         Self(mem)
