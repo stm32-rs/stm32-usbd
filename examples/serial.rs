@@ -32,8 +32,7 @@ fn main() -> ! {
 
     let reset_pin = ResetPin::new(gpioa.pa12, &mut gpioa.crh);
 
-    let usb_bus = UsbBus::usb_with_reset(dp.USB,
-        &mut rcc.apb1, &clocks, reset_pin);
+    let usb_bus = UsbBus::usb_with_reset(dp.USB, &clocks, reset_pin);
 
     let mut serial = cdc_acm::SerialPort::new(&usb_bus);
 

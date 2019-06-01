@@ -41,8 +41,7 @@ fn main() -> ! {
 
     // Unsafe to allow access to static variables
     unsafe {
-        let bus = UsbBus::usb_with_reset(dp.USB,
-            &mut rcc.apb1, &clocks, reset_pin);
+        let bus = UsbBus::usb_with_reset(dp.USB, &clocks, reset_pin);
 
         USB_BUS = Some(bus);
 

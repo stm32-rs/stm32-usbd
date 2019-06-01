@@ -40,9 +40,7 @@ const APP: () = {
 
         let reset_pin = ResetPin::new(gpioa.pa12, &mut gpioa.crh);
 
-        *USB_BUS = Some(UsbBus::usb_with_reset(
-            device.USB, &mut rcc.apb1,
-            &clocks, reset_pin));
+        *USB_BUS = Some(UsbBus::usb_with_reset(device.USB, &clocks, reset_pin));
 
         let serial = cdc_acm::SerialPort::new(USB_BUS.as_ref().unwrap());
 
