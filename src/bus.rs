@@ -8,8 +8,7 @@ use cortex_m::asm::delay;
 use cortex_m::interrupt;
 
 use crate::target::hal::rcc;
-use crate::target::hal::stm32::USB;
-use crate::target::{APB, apb_usb_enable, NUM_ENDPOINTS};
+use crate::target::{USB, APB, apb_usb_enable, NUM_ENDPOINTS, UsbRegisters};
 use crate::atomic_mutex::AtomicMutex;
 use crate::endpoint::{Endpoint, EndpointStatus, calculate_count_rx};
 use crate::endpoint_memory::EndpointMemoryAllocator;
@@ -23,7 +22,7 @@ struct Reset {
 
 /// USB peripheral driver for STM32 microcontrollers.
 pub struct UsbBus {
-    regs: AtomicMutex<USB>,
+    regs: AtomicMutex<UsbRegisters>,
     endpoints: [Endpoint; NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
@@ -38,7 +37,7 @@ impl UsbBus {
         apb_usb_enable(apb);
 
         let bus = UsbBus {
-            regs: AtomicMutex::new(regs),
+            regs: AtomicMutex::new(UsbRegisters::new(regs)),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
             endpoints: unsafe {
@@ -145,7 +144,7 @@ impl usb_device::bus::UsbBus for UsbBus {
             // at least that long.
             delay(72);
 
-            regs.btable.modify(|_, w| unsafe { w.btable().bits(0) });
+            regs.btable.modify(|_, w| w.btable().bits(0));
             regs.cntr.modify(|_, w| w
                 .fres().clear_bit()
                 .resetm().set_bit()
@@ -164,7 +163,7 @@ impl usb_device::bus::UsbBus for UsbBus {
             let regs = self.regs.lock(cs);
 
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
-            regs.daddr.modify(|_, w| unsafe { w.ef().set_bit().add().bits(0) });
+            regs.daddr.modify(|_, w| w.ef().set_bit().add().bits(0));
 
             for ep in self.endpoints.iter() {
                 ep.configure(cs);
@@ -174,7 +173,7 @@ impl usb_device::bus::UsbBus for UsbBus {
 
     fn set_device_address(&self, addr: u8) {
         interrupt::free(|cs| {
-            self.regs.lock(cs).daddr.modify(|_, w| unsafe { w.add().bits(addr as u8) });
+            self.regs.lock(cs).daddr.modify(|_, w| w.add().bits(addr as u8));
         });
     }
 

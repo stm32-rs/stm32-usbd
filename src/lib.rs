@@ -15,3 +15,5 @@ mod target;
 pub mod bus;
 
 pub use crate::bus::{UsbBus, ResetPin};
+
+mod pac;

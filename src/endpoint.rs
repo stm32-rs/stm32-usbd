@@ -4,7 +4,7 @@ use cortex_m::interrupt;
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
 use crate::atomic_mutex::AtomicMutex;
-use crate::target::{usb, ep_reg, UsbAccessType};
+use crate::target::{UsbRegisters, usb, UsbAccessType};
 use crate::endpoint_memory::{EndpointBuffer, BufferDescriptor, EndpointMemoryAllocator};
 
 
@@ -86,7 +86,7 @@ impl Endpoint {
     }
 
     fn reg(&self) -> &'static usb::EPR {
-        ep_reg(self.index)
+        UsbRegisters::ep_register(self.index)
     }
 
     pub fn configure(&self, cs: &CriticalSection) {
@@ -95,7 +95,7 @@ impl Endpoint {
             None => { return },
         };
 
-        self.reg().modify(|_, w| unsafe {
+        self.reg().modify(|_, w| {
             Self::clear_toggle_bits(w)
                 .ctr_rx().clear_bit()
                 // dtog_rx
@@ -189,13 +189,11 @@ impl Endpoint {
     }*/
 
     fn clear_toggle_bits(w: &mut usb::epr::W) -> &mut usb::epr::W {
-        unsafe {
-            w
-                .dtog_rx().clear_bit()
-                .dtog_tx().clear_bit()
-                .stat_rx().bits(0)
-                .stat_tx().bits(0)
-        }
+        w
+            .dtog_rx().clear_bit()
+            .dtog_tx().clear_bit()
+            .stat_rx().bits(0)
+            .stat_tx().bits(0)
     }
 
     pub fn clear_ctr_rx(&self, _cs: &CriticalSection) {
@@ -207,14 +205,14 @@ impl Endpoint {
     }
 
     pub fn set_stat_rx(&self, _cs: &CriticalSection, status: EndpointStatus) {
-        self.reg().modify(|r, w| unsafe {
+        self.reg().modify(|r, w| {
             Self::clear_toggle_bits(w)
                 .stat_rx().bits(r.stat_rx().bits() ^ (status as u8))
         });
     }
 
     pub fn set_stat_tx(&self, _cs: &CriticalSection, status: EndpointStatus) {
-        self.reg().modify(|r, w| unsafe {
+        self.reg().modify(|r, w| {
             Self::clear_toggle_bits(w)
                 .stat_tx().bits(r.stat_tx().bits() ^ (status as u8))
         });

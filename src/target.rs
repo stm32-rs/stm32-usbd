@@ -8,30 +8,15 @@ pub use stm32l4xx_hal as hal;
 
 
 // USB PAC reexports
-#[cfg(not(feature = "pac_ep_hack"))]
-pub use hal::stm32::usb;
-#[cfg(feature = "pac_ep_hack")]
-pub mod usb {
-    pub use super::hal::stm32::usb::EP0R as EPR;
-    pub use super::hal::stm32::usb::ep0r as epr;
-}
+#[cfg(feature = "stm32f103xx")]
+pub use hal::stm32::USB;
+#[cfg(feature = "stm32l4x2xx")]
+pub use hal::stm32::USB;
 
-
-/// Returns EP register reference by its index
-pub fn ep_reg(index: u8) -> &'static usb::EPR {
-    unsafe {
-        let usb = &(*hal::stm32::USB::ptr());
-        match () {
-            #[cfg(not(feature = "pac_ep_hack"))]
-            () => &usb.epr[index as usize],
-            #[cfg(feature = "pac_ep_hack")]
-            () => {
-                let ep0r_ptr: *const usb::EPR = &usb.ep0r;
-                &*ep0r_ptr.offset(index as isize)
-            },
-        }
-    }
-}
+// Use bundled register definitions instead of device-specific ones
+// This should work because register definitions from newer chips seem to be
+// compatible with definitions for older ones.
+pub use crate::pac::usb;
 
 
 #[cfg(usb_access_scheme = "1x16")]
@@ -102,5 +87,28 @@ impl ResetPin {
 
     pub fn set_low(&mut self) {
         self.pin.set_low()
+    }
+}
+
+/// Wrapper around device-specific peripheral that provides unified register interface
+pub struct UsbRegisters(USB);
+
+impl core::ops::Deref for UsbRegisters {
+    type Target = usb::RegisterBlock;
+
+    fn deref(&self) -> &Self::Target {
+        let ptr = USB::ptr() as *const Self::Target;
+        unsafe { &*ptr }
+    }
+}
+
+impl UsbRegisters {
+    pub fn new(usb: USB) -> Self {
+        Self(usb)
+    }
+
+    pub fn ep_register(index: u8) -> &'static usb::EPR {
+        let usb_ptr = USB::ptr() as *const usb::RegisterBlock;
+        unsafe { &(*usb_ptr).epr[index as usize] }
     }
 }
