@@ -8,7 +8,7 @@ use cortex_m::asm::delay;
 use cortex_m::interrupt;
 
 use crate::target::hal::rcc;
-use crate::target::{USB, APB, apb_usb_enable, NUM_ENDPOINTS, UsbRegisters};
+use crate::target::{USB, apb_usb_enable, NUM_ENDPOINTS, UsbRegisters};
 use crate::atomic_mutex::AtomicMutex;
 use crate::endpoint::{Endpoint, EndpointStatus, calculate_count_rx};
 use crate::endpoint_memory::EndpointMemoryAllocator;
@@ -30,11 +30,8 @@ pub struct UsbBus {
 }
 
 impl UsbBus {
-    fn new(regs: USB, apb: &mut APB, reset: Option<Reset>) -> UsbBusAllocator<Self> {
-        // TODO: apb.enr is not public, figure out how this should really interact with the HAL
-        // crate
-
-        apb_usb_enable(apb);
+    fn new(regs: USB, reset: Option<Reset>) -> UsbBusAllocator<Self> {
+        apb_usb_enable();
 
         let bus = UsbBus {
             regs: AtomicMutex::new(UsbRegisters::new(regs)),
@@ -56,21 +53,19 @@ impl UsbBus {
     }
 
     /// Constructs a new USB peripheral driver.
-    pub fn usb(regs: USB, apb: &mut APB) -> UsbBusAllocator<Self> {
-        UsbBus::new(regs, apb, None)
+    pub fn usb(regs: USB) -> UsbBusAllocator<Self> {
+        UsbBus::new(regs, None)
     }
 
     /// Constructs a new USB peripheral driver with the "reset" method enabled.
     pub fn usb_with_reset(
         regs: USB,
-        apb: &mut APB,
         clocks: &rcc::Clocks,
         reset_pin: ResetPin
     ) -> UsbBusAllocator<Self>
     {
         UsbBus::new(
             regs,
-            apb,
             Some(Reset {
                 delay: clocks.sysclk().0,
                 pin: Mutex::new(RefCell::new(reset_pin)),

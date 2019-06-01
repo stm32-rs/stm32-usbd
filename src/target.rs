@@ -40,16 +40,8 @@ pub const EP_MEM_SIZE: usize = 1024;
 pub const NUM_ENDPOINTS: usize = 8;
 
 
-// Device-specific bus definition
-#[cfg(feature = "stm32f103xx")]
-pub type APB = hal::rcc::APB1;
-#[cfg(feature = "stm32l4x2xx")]
-pub type APB = hal::rcc::APB1R1;
-
-
 /// Enables USB peripheral
-pub fn apb_usb_enable(apb: &mut APB) {
-    let _ = apb;
+pub fn apb_usb_enable() {
     cortex_m::interrupt::free(|_| {
         let rcc = unsafe { (&*hal::stm32::RCC::ptr()) };
         match () {
