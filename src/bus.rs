@@ -153,6 +153,9 @@ impl usb_device::bus::UsbBus for UsbBus {
                 .wkupm().set_bit()
                 .ctrm().set_bit());
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
+
+            #[cfg(usb_dp_pull_up_support)]
+            regs.bcdr.modify(|_, w| w.dppu().set_bit());
         });
     }
 

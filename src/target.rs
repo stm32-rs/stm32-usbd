@@ -41,7 +41,10 @@ pub type UsbAccessType = u32;
 pub type UsbAccessType = u16;
 
 
+#[cfg(feature = "stm32f103xx")]
 pub const EP_MEM_ADDR: usize = 0x4000_6000;
+#[cfg(feature = "stm32l4x2xx")]
+pub const EP_MEM_ADDR: usize = 0x4000_6C00;
 
 
 #[cfg(usb_buffer_size = "512")]
