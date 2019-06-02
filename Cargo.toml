@@ -12,7 +12,7 @@ stm32f0xx-hal = { version = "0.14", features = ["rt"], optional = true }
 stm32f1xx-hal = { version = "0.3", features = ["rt"], optional = true }
 stm32f3xx-hal = { version = "0.1.4", features = ["rt"], optional = true }
 stm32l4xx-hal = { version = "0.4", features = ["rt"], optional = true }
-usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3" }
+usb-device = "0.2.0"
 
 [dev-dependencies]
 cortex-m-rt = "0.6.7"
