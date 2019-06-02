@@ -3,6 +3,8 @@
 > [usb-device](https://github.com/mvirkkunen/usb-device) implementation for STM32
 microcontrollers.
 
+This repository is a fork for the [mvirkkunen/stm32f103xx-usb](https://github.com/mvirkkunen/stm32f103xx-usb) crate.
+
 ## Supported microcontrollers
 
 * `STM32F103xx`
