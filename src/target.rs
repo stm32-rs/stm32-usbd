@@ -1,6 +1,8 @@
 //! Target-specific definitions
 
 // Export HAL
+#[cfg(feature = "stm32f042xx")]
+pub use stm32f0xx_hal as hal;
 #[cfg(feature = "stm32f103xx")]
 pub use stm32f1xx_hal as hal;
 #[cfg(feature = "stm32l4x2xx")]
@@ -8,6 +10,8 @@ pub use stm32l4xx_hal as hal;
 
 
 // USB PAC reexports
+#[cfg(feature = "stm32f042xx")]
+pub use hal::stm32::USB;
 #[cfg(feature = "stm32f103xx")]
 pub use hal::stm32::USB;
 #[cfg(feature = "stm32l4x2xx")]
@@ -25,7 +29,7 @@ pub type UsbAccessType = u32;
 pub type UsbAccessType = u16;
 
 
-#[cfg(feature = "stm32f103xx")]
+#[cfg(any(feature = "stm32f103xx", feature = "stm32f042xx"))]
 pub const EP_MEM_ADDR: usize = 0x4000_6000;
 #[cfg(feature = "stm32l4x2xx")]
 pub const EP_MEM_ADDR: usize = 0x4000_6C00;
@@ -45,7 +49,7 @@ pub fn apb_usb_enable() {
     cortex_m::interrupt::free(|_| {
         let rcc = unsafe { (&*hal::stm32::RCC::ptr()) };
         match () {
-            #[cfg(feature = "stm32f103xx")]
+            #[cfg(any(feature = "stm32f103xx", feature = "stm32f042xx"))]
             () => rcc.apb1enr.modify(|_, w| w.usben().set_bit()),
             #[cfg(feature = "stm32l4x2xx")]
             () => rcc.apb1enr1.modify(|_, w| w.usbfsen().set_bit()),
