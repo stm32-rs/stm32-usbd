@@ -317,14 +317,11 @@ impl usb_device::bus::UsbBus for UsbBus {
                     delay(reset.delay);
 
                     regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));
+
+                    Ok(())
                 },
-                None => {
-                    regs.cntr.modify(|_, w| w.fres().set_bit());
-                    delay(1000000);
-                    regs.cntr.modify(|_, w| w.fres().set_bit());
-                },
+                None => Err(UsbError::Unsupported),
             }
-        });
-        Ok(())
+        })
     }
 }
