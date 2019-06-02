@@ -10,6 +10,7 @@ vcell = "0.1.0"
 cortex-m = "0.5.8"
 stm32f0xx-hal = { version = "0.14", features = ["rt"], optional = true }
 stm32f1xx-hal = { version = "0.3", features = ["rt"], optional = true }
+stm32f3xx-hal = { version = "0.1.4", features = ["rt"], optional = true }
 stm32l4xx-hal = { version = "0.4", features = ["rt"], optional = true }
 usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3" }
 
@@ -22,4 +23,5 @@ panic-semihosting = "0.5.1"
 default = []
 stm32f042xx = ['stm32f0xx-hal', 'stm32f0xx-hal/stm32f042']
 stm32f103xx = ['stm32f1xx-hal', 'stm32f1xx-hal/stm32f103']
+stm32f303xc = ['stm32f3xx-hal', 'stm32f3xx-hal/stm32f303']
 stm32l4x2xx = ['stm32l4xx-hal', 'stm32l4xx-hal/stm32l4x2']

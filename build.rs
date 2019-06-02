@@ -24,7 +24,7 @@ fn main() {
     let bcd_support;
     let dp_pull_up_support;
     match family.as_str() {
-        "stm32f103xx" => {
+        "stm32f103xx" | "stm32f303xc" => {
             buffer_size = 512;
             access_scheme = "1x16";
             lpm_support = false;
