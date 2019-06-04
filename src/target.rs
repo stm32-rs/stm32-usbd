@@ -61,6 +61,24 @@ pub fn apb_usb_enable() {
     });
 }
 
+// Workaround: cortex-m contains pre-compiled __delay function
+// on which rust-lld fails with "unrecognized reloc 103"
+// https://github.com/rust-embedded/cortex-m/issues/125
+#[cfg(usb_delay_workaround)]
+pub fn delay(n: u32) {
+    #[inline(never)]
+    fn __delay(mut n: u32) {
+        while n > 0 {
+            n -= 1;
+            cortex_m::asm::nop();
+        }
+    }
+
+    __delay(n / 4 + 1);
+}
+#[cfg(not(usb_delay_workaround))]
+pub use cortex_m::asm::delay;
+
 
 use hal::prelude::*;
 use hal::gpio::{self, gpioa};

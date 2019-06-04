@@ -52,4 +52,7 @@ fn main() {
     if dp_pull_up_support {
         println!("cargo:rustc-cfg=usb_dp_pull_up_support");
     }
+    if env::var("TARGET").unwrap().starts_with("thumbv6m") {
+        println!("cargo:rustc-cfg=usb_delay_workaround");
+    }
 }
