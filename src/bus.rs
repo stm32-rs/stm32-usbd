@@ -313,6 +313,20 @@ impl usb_device::bus::UsbBus for UsbBus {
 
                     Ok(())
                 },
+                #[cfg(usb_dp_pull_up_support)]
+                None => {
+                    let pdwn = regs.cntr.read().pdwn().bit_is_set();
+                    regs.cntr.modify(|_, w| w.pdwn().set_bit());
+                    regs.bcdr.modify(|_, w| w.dppu().clear_bit());
+
+                    delay(100_000);
+
+                    regs.bcdr.modify(|_, w| w.dppu().set_bit());
+                    regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));
+
+                    Ok(())
+                }
+                #[cfg(not(usb_dp_pull_up_support))]
                 None => Err(UsbError::Unsupported),
             }
         })
