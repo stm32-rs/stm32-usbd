@@ -8,7 +8,6 @@
 mod endpoint;
 mod endpoint_memory;
 
-mod atomic_mutex;
 mod target;
 
 /// USB peripheral driver.

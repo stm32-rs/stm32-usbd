@@ -1,9 +1,7 @@
 use core::mem;
-use bare_metal::CriticalSection;
-use cortex_m::interrupt;
+use cortex_m::interrupt::{self, Mutex, CriticalSection};
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
-use crate::atomic_mutex::AtomicMutex;
 use crate::target::{UsbRegisters, usb, UsbAccessType};
 use crate::endpoint_memory::{EndpointBuffer, BufferDescriptor, EndpointMemoryAllocator};
 
@@ -11,8 +9,8 @@ use crate::endpoint_memory::{EndpointBuffer, BufferDescriptor, EndpointMemoryAll
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]
 pub struct Endpoint {
-    out_buf: Option<AtomicMutex<EndpointBuffer>>,
-    in_buf: Option<AtomicMutex<EndpointBuffer>>,
+    out_buf: Option<Mutex<EndpointBuffer>>,
+    in_buf: Option<Mutex<EndpointBuffer>>,
     ep_type: Option<EndpointType>,
     index: u8,
 }
@@ -61,7 +59,7 @@ impl Endpoint {
 
     pub fn set_out_buf(&mut self, buffer: EndpointBuffer, size_bits: u16) {
         let offset = buffer.offset();
-        self.out_buf = Some(AtomicMutex::new(buffer));
+        self.out_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
         descr.addr_rx.set(offset as UsbAccessType);
@@ -74,7 +72,7 @@ impl Endpoint {
 
     pub fn set_in_buf(&mut self, buffer: EndpointBuffer) {
         let offset = buffer.offset();
-        self.in_buf = Some(AtomicMutex::new(buffer));
+        self.in_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
         descr.addr_tx.set(offset as UsbAccessType);
@@ -118,64 +116,58 @@ impl Endpoint {
     }
 
     pub fn write(&self, buf: &[u8]) -> Result<usize> {
-        let guard = self.in_buf.as_ref().unwrap().try_lock();
-
-        let in_buf = match guard {
-            Some(ref b) => b,
-            None => { return Err(UsbError::WouldBlock); }
-        };
-
-        if buf.len() > in_buf.capacity() {
-            return Err(UsbError::BufferOverflow);
-        }
-
-        let reg = self.reg();
-
-        match reg.read().stat_tx().bits().into() {
-            EndpointStatus::Valid | EndpointStatus::Disabled => return Err(UsbError::WouldBlock),
-            _ => {},
-        };
-
-        in_buf.write(buf);
-        self.descr().count_tx.set(buf.len() as u16 as UsbAccessType);
-
         interrupt::free(|cs| {
-            self.set_stat_tx(cs, EndpointStatus::Valid);
-        });
+            let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 
-        Ok(buf.len())
+            if buf.len() > in_buf.capacity() {
+                return Err(UsbError::BufferOverflow);
+            }
+
+            let reg = self.reg();
+
+            match reg.read().stat_tx().bits().into() {
+                EndpointStatus::Valid | EndpointStatus::Disabled => return Err(UsbError::WouldBlock),
+                _ => {},
+            };
+
+            in_buf.write(buf);
+            self.descr().count_tx.set(buf.len() as u16 as UsbAccessType);
+
+            interrupt::free(|cs| {
+                self.set_stat_tx(cs, EndpointStatus::Valid);
+            });
+
+            Ok(buf.len())
+        })
     }
 
     pub fn read(&self, buf: &mut [u8]) -> Result<usize> {
-        let guard = self.out_buf.as_ref().unwrap().try_lock();
-
-        let out_buf = match guard {
-            Some(ref b) => b,
-            None => { return Err(UsbError::WouldBlock); }
-        };
-
-        let reg = self.reg();
-        let reg_v = reg.read();
-
-        let status: EndpointStatus = reg_v.stat_rx().bits().into();
-
-        if status == EndpointStatus::Disabled || !reg_v.ctr_rx().bit_is_set() {
-            return Err(UsbError::WouldBlock);
-        }
-
-        let count = (self.descr().count_rx.get() & 0x3ff) as usize;
-        if count > buf.len() {
-            return Err(UsbError::BufferOverflow);
-        }
-
-        out_buf.read(&mut buf[0..count]);
-
         interrupt::free(|cs| {
-            self.clear_ctr_rx(cs);
-            self.set_stat_rx(cs, EndpointStatus::Valid);
-        });
+            let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
 
-        Ok(count)
+            let reg = self.reg();
+            let reg_v = reg.read();
+
+            let status: EndpointStatus = reg_v.stat_rx().bits().into();
+
+            if status == EndpointStatus::Disabled || !reg_v.ctr_rx().bit_is_set() {
+                return Err(UsbError::WouldBlock);
+            }
+
+            let count = (self.descr().count_rx.get() & 0x3ff) as usize;
+            if count > buf.len() {
+                return Err(UsbError::BufferOverflow);
+            }
+
+            out_buf.read(&mut buf[0..count]);
+
+            interrupt::free(|cs| {
+                self.clear_ctr_rx(cs);
+                self.set_stat_rx(cs, EndpointStatus::Valid);
+            });
+
+            Ok(count)
+        })
     }
 
     pub fn read_reg(&self) -> usb::epr::R {

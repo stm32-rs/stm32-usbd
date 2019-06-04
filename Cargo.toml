@@ -5,7 +5,6 @@ edition = "2018"
 authors = ["Matti Virkkunen <mvirkkunen@gmail.com>", "Vadim Kaushan <admin@disasm.info>"]
 
 [dependencies]
-bare-metal = "0.2.4"
 vcell = "0.1.0"
 cortex-m = "0.5.8"
 stm32f0xx-hal = { version = "0.14", features = ["rt"], optional = true }

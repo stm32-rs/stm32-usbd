@@ -1,15 +1,13 @@
-use bare_metal::Mutex;
 use core::cell::RefCell;
 use core::mem;
 use usb_device::{Result, UsbDirection, UsbError};
 use usb_device::bus::{UsbBusAllocator, PollResult};
 use usb_device::endpoint::{EndpointType, EndpointAddress};
 use cortex_m::asm::delay;
-use cortex_m::interrupt;
+use cortex_m::interrupt::{self, Mutex};
 
 use crate::target::hal::rcc;
 use crate::target::{USB, apb_usb_enable, NUM_ENDPOINTS, UsbRegisters};
-use crate::atomic_mutex::AtomicMutex;
 use crate::endpoint::{Endpoint, EndpointStatus, calculate_count_rx};
 use crate::endpoint_memory::EndpointMemoryAllocator;
 
@@ -22,7 +20,7 @@ struct Reset {
 
 /// USB peripheral driver for STM32 microcontrollers.
 pub struct UsbBus {
-    regs: AtomicMutex<UsbRegisters>,
+    regs: Mutex<UsbRegisters>,
     endpoints: [Endpoint; NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
@@ -34,7 +32,7 @@ impl UsbBus {
         apb_usb_enable();
 
         let bus = UsbBus {
-            regs: AtomicMutex::new(UsbRegisters::new(regs)),
+            regs: Mutex::new(UsbRegisters::new(regs)),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
             endpoints: unsafe {
@@ -131,7 +129,7 @@ impl usb_device::bus::UsbBus for UsbBus {
         self.max_endpoint = max;
 
         interrupt::free(|cs| {
-            let regs = self.regs.lock(cs);
+            let regs = self.regs.borrow(cs);
 
             regs.cntr.modify(|_, w| w.pdwn().clear_bit());
 
@@ -155,7 +153,7 @@ impl usb_device::bus::UsbBus for UsbBus {
 
     fn reset(&self) {
         interrupt::free(|cs| {
-            let regs = self.regs.lock(cs);
+            let regs = self.regs.borrow(cs);
 
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
             regs.daddr.modify(|_, w| w.ef().set_bit().add().bits(0));
@@ -168,79 +166,74 @@ impl usb_device::bus::UsbBus for UsbBus {
 
     fn set_device_address(&self, addr: u8) {
         interrupt::free(|cs| {
-            self.regs.lock(cs).daddr.modify(|_, w| w.add().bits(addr as u8));
+            self.regs.borrow(cs).daddr.modify(|_, w| w.add().bits(addr as u8));
         });
     }
 
     fn poll(&self) -> PollResult {
-        let mut guard = self.regs.try_lock();
+        interrupt::free(|cs| {
+            let regs = self.regs.borrow(cs);
 
-        let regs = match guard {
-            Some(ref mut r) => r,
-            // re-entrant call, any interrupts will be handled by the already-running call or the
-            // next call
-            None => { return PollResult::None; }
-        };
+            let istr = regs.istr.read();
 
-        let istr = regs.istr.read();
+            if istr.wkup().bit_is_set() {
+                // Interrupt flag bits are write-0-to-clear, other bits should be written as 1 to avoid
+                // race conditions
+                regs.istr.write(|w| unsafe { w.bits(0xffff) }.wkup().clear_bit() );
 
-        if istr.wkup().bit_is_set() {
-            // Interrupt flag bits are write-0-to-clear, other bits should be written as 1 to avoid
-            // race conditions
-            regs.istr.write(|w| unsafe { w.bits(0xffff) }.wkup().clear_bit() );
+                let fnr = regs.fnr.read();
+                //let bits = (fnr.rxdp().bit_is_set() as u8) << 1 | (fnr.rxdm().bit_is_set() as u8);
 
-            let fnr = regs.fnr.read();
-            //let bits = (fnr.rxdp().bit_is_set() as u8) << 1 | (fnr.rxdm().bit_is_set() as u8);
-
-            match (fnr.rxdp().bit_is_set(), fnr.rxdm().bit_is_set()) {
-                (false, false) | (false, true) => {
-                    PollResult::Resume
-                },
-                _ => {
-                    // Spurious wakeup event caused by noise
-                    PollResult::Suspend
-                }
-            }
-        } else if istr.reset().bit_is_set() {
-            regs.istr.write(|w| unsafe { w.bits(0xffff) }.reset().clear_bit() );
-
-            PollResult::Reset
-        } else if istr.susp().bit_is_set() {
-            regs.istr.write(|w| unsafe { w.bits(0xffff) }.susp().clear_bit() );
-
-            PollResult::Suspend
-        } else if istr.ctr().bit_is_set() {
-            let mut ep_out = 0;
-            let mut ep_in_complete = 0;
-            let mut ep_setup = 0;
-            let mut bit = 1;
-
-            for ep in &self.endpoints[0..=self.max_endpoint] {
-                let v = ep.read_reg();
-
-                if v.ctr_rx().bit_is_set() {
-                    ep_out |= bit;
-
-                    if v.setup().bit_is_set() {
-                        ep_setup |= bit;
+                match (fnr.rxdp().bit_is_set(), fnr.rxdm().bit_is_set()) {
+                    (false, false) | (false, true) => {
+                        PollResult::Resume
+                    },
+                    _ => {
+                        // Spurious wakeup event caused by noise
+                        PollResult::Suspend
                     }
                 }
+            } else if istr.reset().bit_is_set() {
+                regs.istr.write(|w| unsafe { w.bits(0xffff) }.reset().clear_bit() );
 
-                if v.ctr_tx().bit_is_set() {
-                    ep_in_complete |= bit;
+                PollResult::Reset
+            } else if istr.susp().bit_is_set() {
+                regs.istr.write(|w| unsafe { w.bits(0xffff) }.susp().clear_bit() );
 
-                    interrupt::free(|cs| {
-                        ep.clear_ctr_tx(cs);
-                    });
+                PollResult::Suspend
+            } else if istr.ctr().bit_is_set() {
+                let mut ep_out = 0;
+                let mut ep_in_complete = 0;
+                let mut ep_setup = 0;
+                let mut bit = 1;
+
+                for ep in &self.endpoints[0..=self.max_endpoint] {
+                    let v = ep.read_reg();
+
+                    if v.ctr_rx().bit_is_set() {
+                        ep_out |= bit;
+
+                        if v.setup().bit_is_set() {
+                            ep_setup |= bit;
+                        }
+                    }
+
+                    if v.ctr_tx().bit_is_set() {
+                        ep_in_complete |= bit;
+
+                        interrupt::free(|cs| {
+                            ep.clear_ctr_tx(cs);
+                        });
+                    }
+
+                    bit <<= 1;
                 }
 
-                bit <<= 1;
+                PollResult::Data { ep_out, ep_in_complete, ep_setup }
+            } else {
+                PollResult::None
             }
-
-            PollResult::Data { ep_out, ep_in_complete, ep_setup }
-        } else {
-            PollResult::None
-        }
+        })
     }
 
     fn write(&self, ep_addr: EndpointAddress, buf: &[u8]) -> Result<usize> {
@@ -290,7 +283,7 @@ impl usb_device::bus::UsbBus for UsbBus {
 
     fn suspend(&self) {
         interrupt::free(|cs| {
-             self.regs.lock(cs).cntr.modify(|_, w| w
+             self.regs.borrow(cs).cntr.modify(|_, w| w
                 .fsusp().set_bit()
                 .lpmode().set_bit());
         });
@@ -298,7 +291,7 @@ impl usb_device::bus::UsbBus for UsbBus {
 
     fn resume(&self) {
         interrupt::free(|cs| {
-            self.regs.lock(cs).cntr.modify(|_, w| w
+            self.regs.borrow(cs).cntr.modify(|_, w| w
                 .fsusp().clear_bit()
                 .lpmode().clear_bit());
         });
@@ -306,7 +299,7 @@ impl usb_device::bus::UsbBus for UsbBus {
 
     fn force_reset(&self) -> Result<()> {
         interrupt::free(|cs| {
-            let regs = self.regs.lock(cs);
+            let regs = self.regs.borrow(cs);
 
             match self.reset {
                 Some(ref reset) => {
