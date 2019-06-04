@@ -10,8 +10,10 @@ This repository is a fork for the [mvirkkunen/stm32f103xx-usb](https://github.co
 * `STM32F103xx`
 * `STM32L4x2xx`
 * `STM32F303xC` (WIP)
-* `STM32F042xx` (WIP)
+* `STM32F042xx`
 
 ## Examples
 
 See the `examples` directory for an example of a custom class and a minimalistic USB serial port device.
+
+See the [stm32-usbd-examples](https://github.com/Disasm/stm32-usbd-examples) repo for different device-specific examples.
