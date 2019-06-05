@@ -1,3 +1,7 @@
+[![crates.io](https://img.shields.io/crates/d/stm32-usbd.svg)](https://crates.io/crates/stm32-usbd)
+[![crates.io](https://img.shields.io/crates/v/stm32-usbd.svg)](https://crates.io/crates/stm32-usbd)
+[![Build Status](https://travis-ci.org/Disasm/stm32-usbd.svg?branch=master)](https://travis-ci.org/Disasm/stm32-usbd)
+
 # `stm32-usbd`
 
 > [usb-device](https://github.com/mvirkkunen/usb-device) implementation for STM32
