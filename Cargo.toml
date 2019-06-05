@@ -3,6 +3,11 @@ name = "stm32-usbd"
 version = "0.1.0"
 edition = "2018"
 authors = ["Matti Virkkunen <mvirkkunen@gmail.com>", "Vadim Kaushan <admin@disasm.info>"]
+description = "'usb-device' implementation for STM32 microcontrollers"
+license = "MIT"
+repository = "https://github.com/Disasm/stm32-usbd"
+readme = "README.md"
+keywords = ["no-std", "embedded", "usb"]
 
 [dependencies]
 vcell = "0.1.0"
