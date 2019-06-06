@@ -2,7 +2,7 @@
 name = "stm32-usbd"
 version = "0.1.1"
 edition = "2018"
-authors = ["Matti Virkkunen <mvirkkunen@gmail.com>", "Vadim Kaushan <admin@disasm.info>"]
+authors = ["Matti Virkkunen <mvirkkunen@gmail.com>", "Vadim Kaushan <admin@disasm.info>", "Nicolas Stalder <n@stalder.io>", "Jonas Martin <lichtfeind@gmail.com>"]
 description = "'usb-device' implementation for STM32 microcontrollers"
 license = "MIT"
 repository = "https://github.com/Disasm/stm32-usbd"
