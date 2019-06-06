@@ -31,7 +31,8 @@ fn main() {
             bcd_support = false;
             dp_pull_up_support = false;
         },
-        "stm32l4x2xx" | "stm32f042xx" => {
+        "stm32l4x2xx" |
+        "stm32f042xx" | "stm32f048xx" | "stm32f072xx" | "stm32f078xx" => {
             buffer_size = 1024;
             access_scheme = "2x16";
             lpm_support = true;
