@@ -13,6 +13,6 @@ mod target;
 /// USB peripheral driver.
 pub mod bus;
 
-pub use crate::bus::{UsbBus, ResetPin};
+pub use crate::bus::UsbBus;
 
 mod pac;

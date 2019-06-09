@@ -1,21 +1,13 @@
-use core::cell::RefCell;
 use core::mem;
 use usb_device::{Result, UsbDirection, UsbError};
 use usb_device::bus::{UsbBusAllocator, PollResult};
 use usb_device::endpoint::{EndpointType, EndpointAddress};
 use cortex_m::interrupt::{self, Mutex};
 
-use crate::target::hal::rcc;
 use crate::target::{USB, apb_usb_enable, delay, NUM_ENDPOINTS, UsbRegisters};
 use crate::endpoint::{Endpoint, EndpointStatus, calculate_count_rx};
 use crate::endpoint_memory::EndpointMemoryAllocator;
 
-pub use crate::target::ResetPin;
-
-struct Reset {
-    delay: u32,
-    pin: Mutex<RefCell<ResetPin>>,
-}
 
 /// USB peripheral driver for STM32 microcontrollers.
 pub struct UsbBus {
@@ -23,11 +15,10 @@ pub struct UsbBus {
     endpoints: [Endpoint; NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
-    reset: Option<Reset>,
 }
 
 impl UsbBus {
-    fn new(regs: USB, reset: Option<Reset>) -> UsbBusAllocator<Self> {
+    fn new(regs: USB) -> UsbBusAllocator<Self> {
         apb_usb_enable();
 
         let bus = UsbBus {
@@ -43,7 +34,6 @@ impl UsbBus {
 
                 endpoints
             },
-            reset,
         };
 
         UsbBusAllocator::new(bus)
@@ -51,22 +41,7 @@ impl UsbBus {
 
     /// Constructs a new USB peripheral driver.
     pub fn usb(regs: USB) -> UsbBusAllocator<Self> {
-        UsbBus::new(regs, None)
-    }
-
-    /// Constructs a new USB peripheral driver with the "reset" method enabled.
-    pub fn usb_with_reset(
-        regs: USB,
-        clocks: &rcc::Clocks,
-        reset_pin: ResetPin
-    ) -> UsbBusAllocator<Self>
-    {
-        UsbBus::new(
-            regs,
-            Some(Reset {
-                delay: clocks.sysclk().0,
-                pin: Mutex::new(RefCell::new(reset_pin)),
-            }))
+        UsbBus::new(regs)
     }
 }
 
@@ -299,40 +274,5 @@ impl usb_device::bus::UsbBus for UsbBus {
                 .fsusp().clear_bit()
                 .lpmode().clear_bit());
         });
-    }
-
-    fn force_reset(&self) -> Result<()> {
-        interrupt::free(|cs| {
-            let regs = self.regs.borrow(cs);
-
-            match self.reset {
-                Some(ref reset) => {
-                    let pdwn = regs.cntr.read().pdwn().bit_is_set();
-                    regs.cntr.modify(|_, w| w.pdwn().set_bit());
-
-                    reset.pin.borrow(cs).borrow_mut().set_low();
-                    delay(reset.delay);
-
-                    regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));
-
-                    Ok(())
-                },
-                #[cfg(usb_dp_pull_up_support)]
-                None => {
-                    let pdwn = regs.cntr.read().pdwn().bit_is_set();
-                    regs.cntr.modify(|_, w| w.pdwn().set_bit());
-                    regs.bcdr.modify(|_, w| w.dppu().clear_bit());
-
-                    delay(100_000);
-
-                    regs.bcdr.modify(|_, w| w.dppu().set_bit());
-                    regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));
-
-                    Ok(())
-                }
-                #[cfg(not(usb_dp_pull_up_support))]
-                None => Err(UsbError::Unsupported),
-            }
-        })
     }
 }

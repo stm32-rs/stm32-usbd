@@ -80,34 +80,6 @@ pub fn delay(n: u32) {
 pub use cortex_m::asm::delay;
 
 
-use hal::prelude::*;
-use hal::gpio::{self, gpioa};
-
-/// Device-dependent wrapper for USB D+ pin
-pub struct ResetPin {
-    pin: gpioa::PA12<gpio::Output<gpio::PushPull>>,
-}
-
-impl ResetPin {
-    #[cfg(feature = "stm32f103xx")]
-    pub fn new<M>(pa12: gpioa::PA12<M>, crh: &mut gpioa::CRH) -> Self {
-        Self {
-            pin: pa12.into_push_pull_output(crh)
-        }
-    }
-
-    #[cfg(any(feature = "stm32l4x2xx", feature = "stm32f303xc"))]
-    pub fn new<M>(pa12: gpioa::PA12<M>, moder: &mut gpioa::MODER, otyper: &mut gpioa::OTYPER) -> Self {
-        Self {
-            pin: pa12.into_push_pull_output(moder, otyper)
-        }
-    }
-
-    pub fn set_low(&mut self) {
-        self.pin.set_low()
-    }
-}
-
 /// Wrapper around device-specific peripheral that provides unified register interface
 pub struct UsbRegisters(USB);
 
