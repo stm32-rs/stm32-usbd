@@ -1,24 +1,27 @@
+use core::marker::PhantomData;
 use core::mem;
 use usb_device::{Result, UsbDirection, UsbError};
 use usb_device::bus::{UsbBusAllocator, PollResult};
 use usb_device::endpoint::{EndpointType, EndpointAddress};
 use cortex_m::interrupt::{self, Mutex};
 
-use crate::target::{USB, apb_usb_enable, delay, NUM_ENDPOINTS, UsbRegisters};
+use crate::target::{USB, apb_usb_enable, delay, NUM_ENDPOINTS, UsbRegisters, UsbPins};
 use crate::endpoint::{Endpoint, EndpointStatus, calculate_count_rx};
 use crate::endpoint_memory::EndpointMemoryAllocator;
 
 
 /// USB peripheral driver for STM32 microcontrollers.
-pub struct UsbBus {
+pub struct UsbBus<PINS> {
     regs: Mutex<UsbRegisters>,
     endpoints: [Endpoint; NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
+    pins: PhantomData<PINS>,
 }
 
-impl UsbBus {
-    fn new(regs: USB) -> UsbBusAllocator<Self> {
+impl<PINS: UsbPins+Sync> UsbBus<PINS> {
+    /// Constructs a new USB peripheral driver.
+    pub fn new(regs: USB, pins: PINS) -> UsbBusAllocator<Self> {
         apb_usb_enable();
 
         let bus = UsbBus {
@@ -34,18 +37,14 @@ impl UsbBus {
 
                 endpoints
             },
+            pins: PhantomData,
         };
 
         UsbBusAllocator::new(bus)
     }
-
-    /// Constructs a new USB peripheral driver.
-    pub fn usb(regs: USB) -> UsbBusAllocator<Self> {
-        UsbBus::new(regs)
-    }
 }
 
-impl usb_device::bus::UsbBus for UsbBus {
+impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     fn alloc_ep(
         &mut self,
         ep_dir: UsbDirection,

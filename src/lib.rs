@@ -14,5 +14,7 @@ mod target;
 pub mod bus;
 
 pub use crate::bus::UsbBus;
+pub use crate::target::usb_pins::UsbPinsType;
+pub type UsbBusType = UsbBus<UsbPinsType>;
 
 mod pac;

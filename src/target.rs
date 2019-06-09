@@ -102,3 +102,43 @@ impl UsbRegisters {
         unsafe { &(*usb_ptr).epr[index as usize] }
     }
 }
+
+
+
+pub trait UsbPins: Send { }
+
+#[cfg(feature = "stm32f0xx-hal")]
+pub mod usb_pins {
+    use super::hal::gpio::{Input, Floating};
+    use super::hal::gpio::gpioa::{PA11, PA12};
+
+    pub type UsbPinsType = (PA11<Input<Floating>>, PA12<Input<Floating>>);
+    impl super::UsbPins for UsbPinsType {}
+}
+
+#[cfg(feature = "stm32f103xx")]
+pub mod usb_pins {
+    use super::hal::gpio::{Input, Floating};
+    use super::hal::gpio::gpioa::{PA11, PA12};
+
+    pub type UsbPinsType = (PA11<Input<Floating>>, PA12<Input<Floating>>);
+    impl super::UsbPins for UsbPinsType {}
+}
+
+#[cfg(feature = "stm32f303xc")]
+pub mod usb_pins {
+    use super::hal::gpio::AF14;
+    use super::hal::gpio::gpioa::{PA11, PA12};
+
+    pub type UsbPinsType = (PA11<AF14>, PA12<AF14>);
+    impl super::UsbPins for UsbPinsType {}
+}
+
+#[cfg(feature = "stm32l4x2xx")]
+pub mod usb_pins {
+    use super::hal::gpio::AF10;
+    use super::hal::gpio::gpioa::{PA11, PA12};
+
+    pub type UsbPinsType = (PA11<AF10>, PA12<AF10>);
+    impl super::UsbPins for UsbPinsType {}
+}
