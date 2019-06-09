@@ -1,8 +1,7 @@
+//! CDC-ACM serial port example using cortex-m-rtfm.
 #![no_main]
 #![no_std]
 #![allow(non_snake_case)]
-
-/// CDC-ACM serial port example using cortex-m-rtfm.
 
 extern crate panic_semihosting;
 
@@ -12,13 +11,12 @@ use cortex_m::asm::delay;
 use rtfm::app;
 use stm32f1xx_hal::prelude::*;
 
-use usb_device::prelude::*;
 use stm32_usbd::{UsbBus, UsbBusType};
 use usb_device::bus;
+use usb_device::prelude::*;
 
 #[app(device = stm32f1xx_hal::stm32)]
 const APP: () = {
-
     static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
     static mut SERIAL: cdc_acm::SerialPort<'static, UsbBusType> = ();
 
@@ -29,7 +27,8 @@ const APP: () = {
         let mut flash = device.FLASH.constrain();
         let mut rcc = device.RCC.constrain();
 
-        let clocks = rcc.cfgr
+        let clocks = rcc
+            .cfgr
             .use_hse(8.mhz())
             .sysclk(48.mhz())
             .pclk1(24.mhz())
@@ -52,14 +51,13 @@ const APP: () = {
 
         let serial = cdc_acm::SerialPort::new(USB_BUS.as_ref().unwrap());
 
-        let mut usb_dev = UsbDeviceBuilder::new(
-                USB_BUS.as_ref().unwrap(),
-                UsbVidPid(0x5824, 0x27dd))
-            .manufacturer("Fake company")
-            .product("Serial port")
-            .serial_number("TEST")
-            .device_class(cdc_acm::USB_CLASS_CDC)
-            .build();
+        let mut usb_dev =
+            UsbDeviceBuilder::new(USB_BUS.as_ref().unwrap(), UsbVidPid(0x5824, 0x27dd))
+                .manufacturer("Fake company")
+                .product("Serial port")
+                .serial_number("TEST")
+                .device_class(cdc_acm::USB_CLASS_CDC)
+                .build();
 
         usb_dev.force_reset().expect("reset failed");
 
@@ -80,8 +78,8 @@ const APP: () = {
 
 fn usb_poll<B: bus::UsbBus>(
     usb_dev: &mut UsbDevice<'static, B>,
-    serial: &mut cdc_acm::SerialPort<'static, B>)
-{
+    serial: &mut cdc_acm::SerialPort<'static, B>,
+) {
     if !usb_dev.poll(&mut [serial]) {
         return;
     }
@@ -98,7 +96,7 @@ fn usb_poll<B: bus::UsbBus>(
             }
 
             serial.write(&buf[0..count]).ok();
-        },
-        _ => { },
+        }
+        _ => {}
     }
 }

@@ -1,17 +1,16 @@
+//! CDC-ACM serial port example using interrupts.
 #![no_std]
 #![no_main]
 
-/// CDC-ACM serial port example using interrupts.
-
 extern crate panic_semihosting;
 
-use cortex_m::asm::{wfi, delay};
+use cortex_m::asm::{delay, wfi};
 use cortex_m_rt::entry;
-use stm32f1xx_hal::{prelude::*, stm32};
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
+use stm32f1xx_hal::{prelude::*, stm32};
 
-use usb_device::{prelude::*, bus::UsbBusAllocator};
 use stm32_usbd::{UsbBus, UsbBusType};
+use usb_device::{bus::UsbBusAllocator, prelude::*};
 
 mod cdc_acm;
 
@@ -27,7 +26,8 @@ fn main() -> ! {
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
 
-    let clocks = rcc.cfgr
+    let clocks = rcc
+        .cfgr
         .use_hse(8.mhz())
         .sysclk(48.mhz())
         .pclk1(24.mhz())
@@ -54,14 +54,13 @@ fn main() -> ! {
 
         USB_SERIAL = Some(cdc_acm::SerialPort::new(USB_BUS.as_ref().unwrap()));
 
-        let mut usb_dev = UsbDeviceBuilder::new(
-                USB_BUS.as_ref().unwrap(),
-                UsbVidPid(0x5824, 0x27dd))
-            .manufacturer("Fake company")
-            .product("Serial port")
-            .serial_number("TEST")
-            .device_class(cdc_acm::USB_CLASS_CDC)
-            .build();
+        let mut usb_dev =
+            UsbDeviceBuilder::new(USB_BUS.as_ref().unwrap(), UsbVidPid(0x5824, 0x27dd))
+                .manufacturer("Fake company")
+                .product("Serial port")
+                .serial_number("TEST")
+                .device_class(cdc_acm::USB_CLASS_CDC)
+                .build();
 
         usb_dev.force_reset().expect("reset failed");
 
@@ -73,7 +72,9 @@ fn main() -> ! {
     nvic.enable(Interrupt::USB_HP_CAN_TX);
     nvic.enable(Interrupt::USB_LP_CAN_RX0);
 
-    loop { wfi(); }
+    loop {
+        wfi();
+    }
 }
 
 #[interrupt]
@@ -106,7 +107,7 @@ fn usb_interrupt() {
             }
 
             serial.write(&buf[0..count]).ok();
-        },
-        _ => { },
+        }
+        _ => {}
     }
 }

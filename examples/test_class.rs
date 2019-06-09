@@ -7,8 +7,8 @@ use cortex_m::asm::delay;
 use cortex_m_rt::entry;
 use stm32f1xx_hal::{prelude::*, stm32};
 
-use usb_device::test_class::TestClass;
 use stm32_usbd::UsbBus;
+use usb_device::test_class::TestClass;
 
 #[entry]
 fn main() -> ! {
@@ -17,7 +17,8 @@ fn main() -> ! {
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
 
-    let clocks = rcc.cfgr
+    let clocks = rcc
+        .cfgr
         .use_hse(8.mhz())
         .sysclk(48.mhz())
         .pclk1(24.mhz())
