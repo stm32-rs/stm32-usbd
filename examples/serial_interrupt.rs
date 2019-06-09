@@ -62,8 +62,6 @@ fn main() -> ! {
                 .device_class(cdc_acm::USB_CLASS_CDC)
                 .build();
 
-        usb_dev.force_reset().expect("reset failed");
-
         USB_DEVICE = Some(usb_dev);
     }
 

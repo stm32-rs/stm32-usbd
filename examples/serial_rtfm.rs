@@ -59,8 +59,6 @@ const APP: () = {
                 .device_class(cdc_acm::USB_CLASS_CDC)
                 .build();
 
-        usb_dev.force_reset().expect("reset failed");
-
         USB_DEV = usb_dev;
         SERIAL = serial;
     }

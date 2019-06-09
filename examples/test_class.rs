@@ -43,8 +43,6 @@ fn main() -> ! {
 
     let mut usb_dev = { test.make_device(&usb_bus) };
 
-    usb_dev.force_reset().expect("reset failed");
-
     loop {
         if usb_dev.poll(&mut [&mut test]) {
             test.poll();
