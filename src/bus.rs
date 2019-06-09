@@ -21,7 +21,7 @@ pub struct UsbBus<PINS> {
 
 impl<PINS: UsbPins+Sync> UsbBus<PINS> {
     /// Constructs a new USB peripheral driver.
-    pub fn new(regs: USB, pins: PINS) -> UsbBusAllocator<Self> {
+    pub fn new(regs: USB, _pins: PINS) -> UsbBusAllocator<Self> {
         apb_usb_enable();
 
         let bus = UsbBus {
@@ -41,6 +41,30 @@ impl<PINS: UsbPins+Sync> UsbBus<PINS> {
         };
 
         UsbBusAllocator::new(bus)
+    }
+
+    /// Simulates a disconnect from the USB bus, causing the host to reset and re-enumerate the
+    /// device.
+    ///
+    /// Mostly used for development. By calling this at the start of your program ensures that the
+    /// host re-enumerates your device after a new program has been flashed.
+    ///
+    /// `disconnect` parameter is used to provide a custom disconnect function.
+    /// This function will be called with USB peripheral powered down
+    /// and interrupts disabled.
+    /// It should perform disconnect in a platform-specific way.
+    pub fn force_reenumeration<F: FnOnce()>(&mut self, disconnect: F)
+    {
+        interrupt::free(|cs| {
+            let regs = self.regs.borrow(cs);
+
+            let pdwn = regs.cntr.read().pdwn().bit_is_set();
+            regs.cntr.modify(|_, w| w.pdwn().set_bit());
+
+            disconnect();
+
+            regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));
+        });
     }
 }
 
