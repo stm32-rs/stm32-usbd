@@ -11,13 +11,14 @@ This repository is a fork for the [mvirkkunen/stm32f103xx-usb](https://github.co
 
 ## Supported microcontrollers
 
-* `STM32F103xx`
-* `STM32L4x2xx`
-* `STM32F303xC` (WIP)
 * `STM32F042xx`
 * `STM32F048xx`
 * `STM32F072xx`
 * `STM32F078xx`
+* `STM32F103xx`
+* `STM32F303xC`
+* `STM32L4x2xx`
+
 
 ## Examples
 
