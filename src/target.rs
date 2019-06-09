@@ -1,24 +1,24 @@
 //! Target-specific definitions
 
 // Export HAL
-#[cfg(feature = "stm32f0xx-hal")]
+#[cfg(feature = "stm32f0")]
 pub use stm32f0xx_hal as hal;
-#[cfg(feature = "stm32f103xx")]
+#[cfg(feature = "stm32f1")]
 pub use stm32f1xx_hal as hal;
-#[cfg(feature = "stm32f303xc")]
+#[cfg(feature = "stm32f3")]
 pub use stm32f3xx_hal as hal;
-#[cfg(feature = "stm32l4x2xx")]
+#[cfg(feature = "stm32l4")]
 pub use stm32l4xx_hal as hal;
 
 
 // USB PAC reexports
-#[cfg(feature = "stm32f0xx-hal")]
+#[cfg(feature = "stm32f0")]
 pub use hal::stm32::USB;
-#[cfg(feature = "stm32f103xx")]
+#[cfg(feature = "stm32f1")]
 pub use hal::stm32::USB;
-#[cfg(feature = "stm32f303xc")]
+#[cfg(feature = "stm32f3")]
 pub use hal::stm32::USB_FS as USB;
-#[cfg(feature = "stm32l4x2xx")]
+#[cfg(feature = "stm32l4")]
 pub use hal::stm32::USB;
 
 // Use bundled register definitions instead of device-specific ones
@@ -27,21 +27,21 @@ pub use hal::stm32::USB;
 pub use crate::pac::usb;
 
 
-#[cfg(usb_access_scheme = "1x16")]
+#[cfg(feature = "ram_access_1x16")]
 pub type UsbAccessType = u32;
-#[cfg(usb_access_scheme = "2x16")]
+#[cfg(feature = "ram_access_2x16")]
 pub type UsbAccessType = u16;
 
 
-#[cfg(any(feature = "stm32f103xx", feature = "stm32f0xx-hal", feature = "stm32f303xc"))]
+#[cfg(not(feature = "ram_addr_40006c00"))]
 pub const EP_MEM_ADDR: usize = 0x4000_6000;
-#[cfg(feature = "stm32l4x2xx")]
+#[cfg(feature = "ram_addr_40006c00")]
 pub const EP_MEM_ADDR: usize = 0x4000_6C00;
 
 
-#[cfg(usb_buffer_size = "512")]
+#[cfg(feature = "ram_size_512")]
 pub const EP_MEM_SIZE: usize = 512;
-#[cfg(usb_buffer_size = "1024")]
+#[cfg(feature = "ram_size_1024")]
 pub const EP_MEM_SIZE: usize = 1024;
 
 
@@ -53,9 +53,9 @@ pub fn apb_usb_enable() {
     cortex_m::interrupt::free(|_| {
         let rcc = unsafe { (&*hal::stm32::RCC::ptr()) };
         match () {
-            #[cfg(any(feature = "stm32f103xx", feature = "stm32f0xx-hal", feature = "stm32f303xc"))]
+            #[cfg(any(feature = "stm32f0", feature = "stm32f1", feature = "stm32f3"))]
             () => rcc.apb1enr.modify(|_, w| w.usben().set_bit()),
-            #[cfg(feature = "stm32l4x2xx")]
+            #[cfg(feature = "stm32l4")]
             () => rcc.apb1enr1.modify(|_, w| w.usbfsen().set_bit()),
         }
     });
@@ -64,7 +64,7 @@ pub fn apb_usb_enable() {
 // Workaround: cortex-m contains pre-compiled __delay function
 // on which rust-lld fails with "unrecognized reloc 103"
 // https://github.com/rust-embedded/cortex-m/issues/125
-#[cfg(usb_delay_workaround)]
+#[cfg(feature = "delay_workaround")]
 pub fn delay(n: u32) {
     #[inline(never)]
     fn __delay(mut n: u32) {
@@ -76,7 +76,7 @@ pub fn delay(n: u32) {
 
     __delay(n / 4 + 1);
 }
-#[cfg(not(usb_delay_workaround))]
+#[cfg(not(feature = "delay_workaround"))]
 pub use cortex_m::asm::delay;
 
 
@@ -107,7 +107,7 @@ impl UsbRegisters {
 
 pub trait UsbPins: Send { }
 
-#[cfg(feature = "stm32f0xx-hal")]
+#[cfg(feature = "stm32f0")]
 pub mod usb_pins {
     use super::hal::gpio::{Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
@@ -116,7 +116,7 @@ pub mod usb_pins {
     impl super::UsbPins for UsbPinsType {}
 }
 
-#[cfg(feature = "stm32f103xx")]
+#[cfg(feature = "stm32f1")]
 pub mod usb_pins {
     use super::hal::gpio::{Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
@@ -125,7 +125,7 @@ pub mod usb_pins {
     impl super::UsbPins for UsbPinsType {}
 }
 
-#[cfg(feature = "stm32f303xc")]
+#[cfg(feature = "stm32f3")]
 pub mod usb_pins {
     use super::hal::gpio::AF14;
     use super::hal::gpio::gpioa::{PA11, PA12};
@@ -134,7 +134,7 @@ pub mod usb_pins {
     impl super::UsbPins for UsbPinsType {}
 }
 
-#[cfg(feature = "stm32l4x2xx")]
+#[cfg(feature = "stm32l4")]
 pub mod usb_pins {
     use super::hal::gpio::{AF10, Alternate, Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
