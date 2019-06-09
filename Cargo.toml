@@ -5,7 +5,7 @@ edition = "2018"
 authors = ["Matti Virkkunen <mvirkkunen@gmail.com>", "Vadim Kaushan <admin@disasm.info>", "Nicolas Stalder <n@stalder.io>", "Jonas Martin <lichtfeind@gmail.com>"]
 description = "'usb-device' implementation for STM32 microcontrollers"
 license = "MIT"
-repository = "https://github.com/Disasm/stm32-usbd"
+repository = "https://github.com/stm32-rs/stm32-usbd"
 readme = "README.md"
 keywords = ["no-std", "embedded", "usb"]
 
