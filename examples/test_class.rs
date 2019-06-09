@@ -3,11 +3,12 @@
 
 extern crate panic_semihosting;
 
+use cortex_m::asm::delay;
 use cortex_m_rt::entry;
 use stm32f1xx_hal::{prelude::*, stm32};
 
 use usb_device::test_class::TestClass;
-use stm32_usbd::{UsbBus, ResetPin};
+use stm32_usbd::UsbBus;
 
 #[entry]
 fn main() -> ! {
@@ -26,9 +27,16 @@ fn main() -> ! {
 
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
 
-    let reset_pin = ResetPin::new(gpioa.pa12, &mut gpioa.crh);
+    // BluePill board has a pull-up resistor on the D+ line.
+    // Pull the D+ pin down to send a RESET condition to the USB bus.
+    let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
+    usb_dp.set_low();
+    delay(clocks.sysclk().0 / 100);
 
-    let usb_bus = UsbBus::usb_with_reset(dp.USB, &clocks, reset_pin);
+    let usb_dm = gpioa.pa11;
+    let usb_dp = usb_dp.into_floating_input(&mut gpioa.crh);
+
+    let usb_bus = UsbBus::new(dp.USB, (usb_dm, usb_dp));
 
     let mut test = TestClass::new(&usb_bus);
 

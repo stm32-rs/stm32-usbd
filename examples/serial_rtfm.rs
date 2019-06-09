@@ -8,22 +8,23 @@ extern crate panic_semihosting;
 
 mod cdc_acm;
 
+use cortex_m::asm::delay;
 use rtfm::app;
 use stm32f1xx_hal::prelude::*;
 
 use usb_device::prelude::*;
-use stm32_usbd::{UsbBus, ResetPin};
+use stm32_usbd::{UsbBus, UsbBusType};
 use usb_device::bus;
 
 #[app(device = stm32f1xx_hal::stm32)]
 const APP: () = {
 
-    static mut USB_DEV: UsbDevice<'static, UsbBus> = ();
-    static mut SERIAL: cdc_acm::SerialPort<'static, UsbBus> = ();
+    static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
+    static mut SERIAL: cdc_acm::SerialPort<'static, UsbBusType> = ();
 
     #[init]
     fn init() {
-        static mut USB_BUS: Option<bus::UsbBusAllocator<UsbBus>> = None;
+        static mut USB_BUS: Option<bus::UsbBusAllocator<UsbBusType>> = None;
 
         let mut flash = device.FLASH.constrain();
         let mut rcc = device.RCC.constrain();
@@ -38,9 +39,16 @@ const APP: () = {
 
         let mut gpioa = device.GPIOA.split(&mut rcc.apb2);
 
-        let reset_pin = ResetPin::new(gpioa.pa12, &mut gpioa.crh);
+        // BluePill board has a pull-up resistor on the D+ line.
+        // Pull the D+ pin down to send a RESET condition to the USB bus.
+        let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
+        usb_dp.set_low();
+        delay(clocks.sysclk().0 / 100);
 
-        *USB_BUS = Some(UsbBus::usb_with_reset(device.USB, &clocks, reset_pin));
+        let usb_dm = gpioa.pa11;
+        let usb_dp = usb_dp.into_floating_input(&mut gpioa.crh);
+
+        *USB_BUS = Some(UsbBus::new(device.USB, (usb_dm, usb_dp)));
 
         let serial = cdc_acm::SerialPort::new(USB_BUS.as_ref().unwrap());
 
