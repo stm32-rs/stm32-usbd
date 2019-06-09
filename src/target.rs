@@ -136,9 +136,12 @@ pub mod usb_pins {
 
 #[cfg(feature = "stm32l4x2xx")]
 pub mod usb_pins {
-    use super::hal::gpio::AF10;
+    use super::hal::gpio::{AF10, Alternate, Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
 
-    pub type UsbPinsType = (PA11<AF10>, PA12<AF10>);
+    pub type UsbPinsType = (
+        PA11<Alternate<AF10, Input<Floating>>>,
+        PA12<Alternate<AF10, Input<Floating>>>
+    );
     impl super::UsbPins for UsbPinsType {}
 }
