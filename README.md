@@ -30,7 +30,7 @@ If your target MCU matches one of the feature flags listed under the
 
 ```toml
 [dependencies]
-stm32-usbd = { version = "0.1", features = ["stm32f103xx"] }
+stm32-usbd = { version = "0.2", features = ["stm32f103xx"] }
 ```
 
 For other cases, you have to figure out different properties
@@ -64,7 +64,7 @@ instead of `0x4000_6000`
 ```toml
 [dependencies]
 # An example feature set for STM32F303CB MCU
-stm32-usbd = { version = "0.1", features = ["stm32f3", "ram_size_512", "ram_access_1x16"] }
+stm32-usbd = { version = "0.2", features = ["stm32f3", "ram_size_512", "ram_access_1x16"] }
 stm32f3xx-hal = { version = "0.1.4", features = ["rt", "stm32f3xx-hal/stm32f303"] }
 ```
 
