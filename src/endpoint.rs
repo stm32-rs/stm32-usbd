@@ -94,7 +94,7 @@ impl Endpoint {
         };
 
         self.reg().modify(|_, w| {
-            Self::clear_toggle_bits(w)
+            Self::set_invariant_values(w)
                 .ctr_rx().clear_bit()
                 // dtog_rx
                 // stat_rx
@@ -174,38 +174,42 @@ impl Endpoint {
         self.reg().read()
     }
 
-    /*pub fn modify<F>(&self, _cs: CriticalSection, f: F)
-        where for<'w> F: FnOnce(&usb::ep0r::R, &'w mut usb::ep0r::W) -> &'w mut usb::ep0r::W
-    {
-        self.reg().modify(f)
-    }*/
-
-    fn clear_toggle_bits(w: &mut usb::epr::W) -> &mut usb::epr::W {
+    /// The endpoint register fields may be modified by hardware as well as software. To avoid race
+    /// conditions, there are invariant values for the fields that may be modified by the hardware
+    /// that can be written to avoid modifying other fields while modifying a single field. This
+    /// method sets all the volatile fields to their invariant values.
+    fn set_invariant_values(w: &mut usb::epr::W) -> &mut usb::epr::W {
         w
+            .ctr_rx().set_bit()
             .dtog_rx().clear_bit()
-            .dtog_tx().clear_bit()
             .stat_rx().bits(0)
+            .ctr_tx().set_bit()
+            .dtog_tx().clear_bit()
             .stat_tx().bits(0)
     }
 
     pub fn clear_ctr_rx(&self, _cs: &CriticalSection) {
-        self.reg().modify(|_, w| Self::clear_toggle_bits(w).ctr_rx().clear_bit());
+        self.reg().modify(|_, w|
+            Self::set_invariant_values(w)
+                .ctr_rx().clear_bit());
     }
 
     pub fn clear_ctr_tx(&self, _cs: &CriticalSection) {
-        self.reg().modify(|_, w| Self::clear_toggle_bits(w).ctr_tx().clear_bit());
+        self.reg().modify(|_, w|
+            Self::set_invariant_values(w)
+                .ctr_tx().clear_bit());
     }
 
     pub fn set_stat_rx(&self, _cs: &CriticalSection, status: EndpointStatus) {
         self.reg().modify(|r, w| {
-            Self::clear_toggle_bits(w)
+            Self::set_invariant_values(w)
                 .stat_rx().bits(r.stat_rx().bits() ^ (status as u8))
         });
     }
 
     pub fn set_stat_tx(&self, _cs: &CriticalSection, status: EndpointStatus) {
         self.reg().modify(|r, w| {
-            Self::clear_toggle_bits(w)
+            Self::set_invariant_values(w)
                 .stat_tx().bits(r.stat_tx().bits() ^ (status as u8))
         });
     }
