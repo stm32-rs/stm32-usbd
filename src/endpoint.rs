@@ -133,9 +133,7 @@ impl Endpoint {
             in_buf.write(buf);
             self.descr().count_tx.set(buf.len() as u16 as UsbAccessType);
 
-            interrupt::free(|cs| {
-                self.set_stat_tx(cs, EndpointStatus::Valid);
-            });
+            self.set_stat_tx(cs, EndpointStatus::Valid);
 
             Ok(buf.len())
         })
@@ -154,6 +152,8 @@ impl Endpoint {
                 return Err(UsbError::WouldBlock);
             }
 
+            self.clear_ctr_rx(cs);
+
             let count = (self.descr().count_rx.get() & 0x3ff) as usize;
             if count > buf.len() {
                 return Err(UsbError::BufferOverflow);
@@ -161,10 +161,7 @@ impl Endpoint {
 
             out_buf.read(&mut buf[0..count]);
 
-            interrupt::free(|cs| {
-                self.clear_ctr_rx(cs);
-                self.set_stat_rx(cs, EndpointStatus::Valid);
-            });
+            self.set_stat_rx(cs, EndpointStatus::Valid);
 
             Ok(count)
         })
