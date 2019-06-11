@@ -143,8 +143,7 @@ impl Endpoint {
         interrupt::free(|cs| {
             let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
 
-            let reg = self.reg();
-            let reg_v = reg.read();
+            let reg_v = self.reg().read();
 
             let status: EndpointStatus = reg_v.stat_rx().bits().into();
 
@@ -211,12 +210,6 @@ impl Endpoint {
         });
     }
 }
-
-/*#[repr(transparent)]
-struct EndpointReg(usb::EP0R);
-
-impl EndpointReg {
-}*/
 
 trait EndpointTypeExt {
     fn bits(self) -> u8;

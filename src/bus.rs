@@ -182,7 +182,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     .fsusp().clear_bit());
 
                 let fnr = regs.fnr.read();
-                //let bits = (fnr.rxdp().bit_is_set() as u8) << 1 | (fnr.rxdm().bit_is_set() as u8);
 
                 match (fnr.rxdp().bit_is_set(), fnr.rxdm().bit_is_set()) {
                     (false, false) | (false, true) => {
