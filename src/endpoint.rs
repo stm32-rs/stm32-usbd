@@ -106,13 +106,13 @@ impl Endpoint {
                 .ea().bits(self.index)
         });
 
-        if self.out_buf.is_some() {
-            self.set_stat_rx(cs, EndpointStatus::Valid);
-        }
+        self.set_stat_rx(cs,
+            if self.out_buf.is_some() { EndpointStatus::Valid }
+            else { EndpointStatus::Disabled} );
 
-        if self.in_buf.is_some() {
-            self.set_stat_tx(cs, EndpointStatus::Nak);
-        }
+        self.set_stat_tx(cs,
+            if self.in_buf.is_some() { EndpointStatus::Nak }
+            else { EndpointStatus::Disabled} );
     }
 
     pub fn write(&self, buf: &[u8]) -> Result<usize> {
