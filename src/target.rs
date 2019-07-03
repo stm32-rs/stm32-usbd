@@ -17,7 +17,7 @@ pub use hal::stm32::USB;
 #[cfg(feature = "stm32f1")]
 pub use hal::stm32::USB;
 #[cfg(feature = "stm32f3")]
-pub use hal::stm32::USB_FS as USB;
+pub use hal::stm32::USB;
 #[cfg(feature = "stm32l4")]
 pub use hal::stm32::USB;
 
