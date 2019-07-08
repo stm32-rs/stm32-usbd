@@ -178,17 +178,20 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 // race conditions
                 regs.istr.write(|w| unsafe { w.bits(0xffff) }.wkup().clear_bit() );
 
+                self.regs.borrow(cs).cntr.modify(|_, w| w
+                    .fsusp().clear_bit());
+
                 let fnr = regs.fnr.read();
 
                 match (fnr.rxdp().bit_is_set(), fnr.rxdm().bit_is_set()) {
                     (false, false) | (false, true) => {
-                        self.regs.borrow(cs).cntr.modify(|_, w| w
-                            .fsusp().clear_bit());
                         PollResult::Resume
                     },
                     _ => {
                         // Spurious wakeup event caused by noise
-                        PollResult::None
+                        self.regs.borrow(cs).cntr.modify(|_, w| w
+                            .fsusp().set_bit());
+                        PollResult::Suspend
                     }
                 }
             } else if istr.reset().bit_is_set() {
