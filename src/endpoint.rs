@@ -115,6 +115,24 @@ impl Endpoint {
             else { EndpointStatus::Disabled} );
     }
 
+    pub fn can_write(&self) -> bool {
+        interrupt::free(|_| {
+            match self.reg().read().stat_tx().bits().into() {
+                EndpointStatus::Valid | EndpointStatus::Disabled => false,
+                _ => true,
+            }
+        })
+    }
+
+    pub fn write_complete(&self) -> bool {
+        interrupt::free(|_| {
+            match self.reg().read().stat_tx().bits().into() {
+                EndpointStatus::Nak => true,
+                _ => false,
+            }
+        })
+    }
+
     pub fn write(&self, buf: &[u8]) -> Result<usize> {
         interrupt::free(|cs| {
             let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
@@ -136,6 +154,22 @@ impl Endpoint {
             self.set_stat_tx(cs, EndpointStatus::Valid);
 
             Ok(buf.len())
+        })
+    }
+
+    pub fn available_read(&self) -> Result<usize> {
+        interrupt::free(|_| {
+            let reg_v = self.reg().read();
+
+            let status: EndpointStatus = reg_v.stat_rx().bits().into();
+
+            if status == EndpointStatus::Disabled || !reg_v.ctr_rx().bit_is_set() {
+                return Err(UsbError::WouldBlock);
+            }
+
+            let count = (self.descr().count_rx.get() & 0x3ff) as usize;
+
+            Ok(count)
         })
     }
 

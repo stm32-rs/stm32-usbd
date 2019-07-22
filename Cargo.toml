@@ -62,3 +62,6 @@ new_gen = ['ram_size_1024', 'ram_access_2x16', 'lpm_support', 'bcd_support', 'dp
 
 [package.metadata.docs.rs]
 features = ["stm32f103xx"]
+
+[patch.crates-io]
+usb-device = { path = "../usb-device" }
