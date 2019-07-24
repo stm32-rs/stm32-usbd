@@ -72,6 +72,4 @@ Note that you also need to set the device feature for `stm32*-hal` crate.
 
 ## Examples
 
-See the `examples` directory for an example of a custom class and a minimalistic USB serial port device.
-
 See the [stm32-usbd-examples](https://github.com/stm32-rs/stm32-usbd-examples) repo for different device-specific examples.
