@@ -11,7 +11,7 @@ keywords = ["no-std", "embedded", "usb"]
 
 [dependencies]
 vcell = "0.1.0"
-cortex-m = "0.6.0"
+cortex-m = "0.6.1"
 stm32f0xx-hal = { version = "0.14", features = ["rt"], optional = true }
 stm32f1xx-hal = { version = "0.3", features = ["rt"], optional = true }
 stm32f3xx-hal = { version = "0.2", features = ["rt"], optional = true }
@@ -21,10 +21,10 @@ usb-device = "0.2.0"
 
 [features]
 # Device family
-stm32f0 = ['stm32f0xx-hal', 'delay_workaround']
+stm32f0 = ['stm32f0xx-hal']
 stm32f1 = ['stm32f1xx-hal']
 stm32f3 = ['stm32f3xx-hal']
-stm32l0 = ['stm32l0xx-hal', 'delay_workaround']
+stm32l0 = ['stm32l0xx-hal']
 stm32l4 = ['stm32l4xx-hal']
 
 # Dedicated USB RAM size
@@ -42,7 +42,7 @@ dp_pull_up_support = []
 
 # Hacks
 ram_addr_40006c00 = []
-delay_workaround = []
+delay_workaround = []  # deprecated: cortex-m 0.6.1 contains a fix
 
 # Known devices
 stm32f042xx = ['stm32f0', 'stm32f0xx-hal/stm32f042', 'new_gen']

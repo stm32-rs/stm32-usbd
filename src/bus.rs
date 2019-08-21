@@ -4,8 +4,9 @@ use usb_device::{Result, UsbDirection, UsbError};
 use usb_device::bus::{UsbBusAllocator, PollResult};
 use usb_device::endpoint::{EndpointType, EndpointAddress};
 use cortex_m::interrupt::{self, Mutex};
+use cortex_m::asm::delay;
 
-use crate::target::{USB, apb_usb_enable, delay, NUM_ENDPOINTS, UsbRegisters, UsbPins};
+use crate::target::{USB, apb_usb_enable, NUM_ENDPOINTS, UsbRegisters, UsbPins};
 use crate::endpoint::{Endpoint, EndpointStatus, calculate_count_rx};
 use crate::endpoint_memory::EndpointMemoryAllocator;
 

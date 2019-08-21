@@ -65,24 +65,6 @@ pub fn apb_usb_enable() {
     });
 }
 
-// Workaround: cortex-m contains pre-compiled __delay function
-// on which rust-lld fails with "unrecognized reloc 103"
-// https://github.com/rust-embedded/cortex-m/issues/125
-#[cfg(feature = "delay_workaround")]
-pub fn delay(n: u32) {
-    #[inline(never)]
-    fn __delay(mut n: u32) {
-        while n > 0 {
-            n -= 1;
-            cortex_m::asm::nop();
-        }
-    }
-
-    __delay(n / 4 + 1);
-}
-#[cfg(not(feature = "delay_workaround"))]
-pub use cortex_m::asm::delay;
-
 
 /// Wrapper around device-specific peripheral that provides unified register interface
 pub struct UsbRegisters(USB);
