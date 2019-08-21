@@ -17,6 +17,7 @@ This repository is a fork of the [mvirkkunen/stm32f103xx-usb](https://github.com
 * `STM32F078xx`
 * `STM32F103xx`
 * `STM32F303xC`
+* `STM32L0x2xx`
 * `STM32L4x2xx`
 * And others...
 
@@ -30,7 +31,7 @@ If your target MCU matches one of the feature flags listed under the
 
 ```toml
 [dependencies]
-stm32-usbd = { version = "0.2", features = ["stm32f103xx"] }
+stm32-usbd = { version = "0.3", features = ["stm32f103xx"] }
 ```
 
 For other cases, you have to figure out different properties
@@ -42,6 +43,7 @@ Device family:
 * `stm32f0`
 * `stm32f1`
 * `stm32f3`
+* `stm32l0`
 * `stm32l4`
 
 Size of dedicated packet buffer memory SRAM:
@@ -64,7 +66,7 @@ instead of `0x4000_6000`
 ```toml
 [dependencies]
 # An example feature set for STM32F303CB MCU
-stm32-usbd = { version = "0.2", features = ["stm32f3", "ram_size_512", "ram_access_1x16"] }
+stm32-usbd = { version = "0.3", features = ["stm32f3", "ram_size_512", "ram_access_1x16"] }
 stm32f3xx-hal = { version = "0.1.4", features = ["rt", "stm32f3xx-hal/stm32f303"] }
 ```
 
