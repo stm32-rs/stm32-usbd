@@ -21,11 +21,11 @@ usb-device = "0.2.0"
 
 [features]
 # Device family
-stm32f0 = ['stm32f0xx-hal']
-stm32f1 = ['stm32f1xx-hal']
-stm32f3 = ['stm32f3xx-hal']
-stm32l0 = ['stm32l0xx-hal']
-stm32l4 = ['stm32l4xx-hal']
+stm32f0 = ['stm32f0xx-hal', 'family-selected']
+stm32f1 = ['stm32f1xx-hal', 'family-selected']
+stm32f3 = ['stm32f3xx-hal', 'family-selected']
+stm32l0 = ['stm32l0xx-hal', 'family-selected']
+stm32l4 = ['stm32l4xx-hal', 'family-selected']
 
 # Dedicated USB RAM size
 ram_size_512 = []
@@ -57,6 +57,7 @@ stm32l4x2xx = ['stm32l4', 'stm32l4xx-hal/stm32l4x2', 'new_gen', 'ram_addr_40006c
 # Auxiliary features
 old_gen = ['ram_size_512', 'ram_access_1x16']
 new_gen = ['ram_size_1024', 'ram_access_2x16', 'lpm_support', 'bcd_support', 'dp_pull_up_support']
+family-selected = []
 
 [package.metadata.docs.rs]
 features = ["stm32f103xx"]
