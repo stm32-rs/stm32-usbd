@@ -1,3 +1,5 @@
+//! USB peripheral driver.
+
 use core::marker::PhantomData;
 use core::mem;
 use usb_device::{Result, UsbDirection, UsbError};
