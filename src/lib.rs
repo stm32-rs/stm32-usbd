@@ -10,7 +10,6 @@ mod endpoint_memory;
 
 mod target;
 
-/// USB peripheral driver.
 pub mod bus;
 
 pub use crate::bus::UsbBus;
