@@ -10,14 +10,14 @@ readme = "README.md"
 keywords = ["no-std", "embedded", "usb"]
 
 [dependencies]
-vcell = "0.1.0"
+vcell = "0.1.2"
 cortex-m = "0.6.1"
-stm32f0xx-hal = { version = "0.14", features = ["rt"], optional = true }
-stm32f1xx-hal = { version = "0.3", features = ["rt"], optional = true }
-stm32f3xx-hal = { version = "0.2", features = ["rt"], optional = true }
-stm32l0xx-hal = { version = "0.2", features = ["rt"], optional = true }
-stm32l4xx-hal = { version = "0.4", features = ["rt"], optional = true }
-usb-device = "0.2.0"
+stm32f0xx-hal = { version = "0.15", features = ["rt"], optional = true }
+stm32f1xx-hal = { version = "0.4", features = ["rt"], optional = true }
+stm32f3xx-hal = { version = "0.3", features = ["rt"], optional = true }
+stm32l0xx-hal = { version = "0.3", features = ["rt"], optional = true }
+stm32l4xx-hal = { version = "0.5", features = ["rt"], optional = true }
+usb-device = "0.2.3"
 
 [features]
 # Device family
