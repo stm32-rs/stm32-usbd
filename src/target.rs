@@ -14,15 +14,12 @@ pub use stm32l4xx_hal as hal;
 
 
 // USB PAC reexports
-#[cfg(feature = "stm32f0")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32f1")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32f3")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32l0")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32l4")]
+#[cfg(any(
+    feature = "stm32f0",
+    feature = "stm32f1",
+    feature = "stm32f3",
+    feature = "stm32l0", 
+    feature = "stm32l4"))]
 pub use hal::stm32::USB;
 
 // Use bundled register definitions instead of device-specific ones
@@ -67,7 +64,7 @@ pub fn apb_usb_enable() {
 
 
 /// Wrapper around device-specific peripheral that provides unified register interface
-pub struct UsbRegisters(USB);
+/*pub struct UsbRegisters(USB);
 
 impl core::ops::Deref for UsbRegisters {
     type Target = usb::RegisterBlock;
@@ -87,7 +84,7 @@ impl UsbRegisters {
         let usb_ptr = USB::ptr() as *const usb::RegisterBlock;
         unsafe { &(*usb_ptr).epr[index as usize] }
     }
-}
+}*/
 
 
 

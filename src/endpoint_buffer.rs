@@ -1,9 +1,22 @@
 use core::{slice, mem};
 use vcell::VolatileCell;
-use crate::target::{UsbAccessType, EP_MEM_ADDR, EP_MEM_SIZE, NUM_ENDPOINTS};
-use usb_device::{Result, UsbError};
+use crate::target::{UsbAccessType, EP_MEM_ADDR};
 
 const EP_MEM_PTR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
+
+#[repr(C)]
+pub struct BufferDescriptor {
+    pub addr_tx: VolatileCell<UsbAccessType>,
+    pub count_tx: VolatileCell<UsbAccessType>,
+    pub addr_rx: VolatileCell<UsbAccessType>,
+    pub count_rx: VolatileCell<UsbAccessType>,
+}
+
+impl BufferDescriptor {
+    pub fn get(number: u8) -> &'static BufferDescriptor {
+        unsafe { &*(EP_MEM_ADDR as *const BufferDescriptor).offset(number as isize) }
+    }
+}
 
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
@@ -14,6 +27,7 @@ impl EndpointBuffer {
                 EP_MEM_PTR.offset((offset_bytes >> 1) as isize),
                 size_bytes >> 1)
         };
+
         Self(mem)
     }
 
@@ -70,43 +84,5 @@ impl EndpointBuffer {
 
     pub fn capacity(&self) -> usize {
         self.0.len() << 1
-    }
-}
-
-#[repr(C)]
-pub struct BufferDescriptor {
-    pub addr_tx: VolatileCell<UsbAccessType>,
-    pub count_tx: VolatileCell<UsbAccessType>,
-    pub addr_rx: VolatileCell<UsbAccessType>,
-    pub count_rx: VolatileCell<UsbAccessType>,
-}
-
-pub struct EndpointMemoryAllocator {
-    next_free_offset: usize,
-}
-
-impl EndpointMemoryAllocator {
-    pub fn new() -> Self {
-        Self {
-            next_free_offset: NUM_ENDPOINTS * 8
-        }
-    }
-
-    pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
-        assert!(size & 1 == 0);
-        assert!(size < EP_MEM_SIZE);
-
-        let offset = self.next_free_offset;
-        if offset as usize + size > EP_MEM_SIZE {
-            return Err(UsbError::EndpointMemoryOverflow);
-        }
-
-        self.next_free_offset += size;
-
-        Ok(EndpointBuffer::new(offset, size))
-    }
-
-    pub fn buffer_descriptor(index: u8) -> &'static BufferDescriptor {
-        unsafe { &*(EP_MEM_ADDR as *const BufferDescriptor).offset(index as isize) }
     }
 }

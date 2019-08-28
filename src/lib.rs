@@ -13,7 +13,10 @@ Check Cargo.toml for supported families ('Device family' section)");
 mod endpoint;
 
 #[cfg(feature = "family-selected")]
-mod endpoint_memory;
+mod endpoint_buffer;
+
+#[cfg(feature = "family-selected")]
+mod endpoint_register;
 
 #[cfg(feature = "family-selected")]
 mod target;
@@ -25,7 +28,5 @@ pub mod bus;
 pub use crate::bus::UsbBus;
 #[cfg(feature = "family-selected")]
 pub use crate::target::usb_pins::UsbPinsType;
-#[cfg(feature = "family-selected")]
-pub type UsbBusType = UsbBus<UsbPinsType>;
 
 mod pac;

@@ -17,7 +17,11 @@ stm32f1xx-hal = { version = "0.3", features = ["rt"], optional = true }
 stm32f3xx-hal = { version = "0.2", features = ["rt"], optional = true }
 stm32l0xx-hal = { version = "0.2", features = ["rt"], optional = true }
 stm32l4xx-hal = { version = "0.4", features = ["rt"], optional = true }
-usb-device = "0.2.0"
+#usb-device = "0.2.0"
+
+# FIXME temporary dependency for new branch
+[dependencies.usb-device]
+path = "../usb-device"
 
 [features]
 # Device family
