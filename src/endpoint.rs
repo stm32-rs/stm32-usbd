@@ -128,16 +128,14 @@ impl usb_device::endpoint::EndpointIn for EndpointIn {
 }
 
 pub(crate) fn set_stalled(ep_addr: EndpointAddress, stalled: bool) {
-    interrupt::free(|_| {
-        let mut epr = EndpointRegister::get(ep_addr.number());
+    let mut epr = EndpointRegister::get(ep_addr.number());
 
-        match (stalled, ep_addr.direction()) {
-            (true, UsbDirection::In) => epr.set_stat_tx(EndpointStatus::Stall),
-            (true, UsbDirection::Out) => epr.set_stat_rx(EndpointStatus::Stall),
-            (false, UsbDirection::In) => epr.set_stat_tx(EndpointStatus::Nak),
-            (false, UsbDirection::Out) => epr.set_stat_rx(EndpointStatus::Valid),
-        };
-    });
+    match (stalled, ep_addr.direction()) {
+        (true, UsbDirection::In) => epr.set_stat_tx(EndpointStatus::Stall),
+        (true, UsbDirection::Out) => epr.set_stat_rx(EndpointStatus::Stall),
+        (false, UsbDirection::In) => epr.set_stat_tx(EndpointStatus::Nak),
+        (false, UsbDirection::Out) => epr.set_stat_rx(EndpointStatus::Valid),
+    };
 }
 
 pub(crate) fn is_stalled(ep_addr: EndpointAddress) -> bool {
