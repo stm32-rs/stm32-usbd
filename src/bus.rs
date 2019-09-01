@@ -68,6 +68,10 @@ impl usb_device::bus::UsbBus for UsbBus {
     type EndpointIn = EndpointIn;
     type EndpointAllocator = EndpointAllocator;
 
+    fn create_allocator(&mut self) -> EndpointAllocator {
+        EndpointAllocator::new()
+    }
+
     fn enable(&mut self) {
         /*let mut max = 0;
         for (index, ep) in self.endpoints.iter().enumerate() {
@@ -190,6 +194,15 @@ pub struct EndpointAllocator {
 }
 
 impl EndpointAllocator {
+    fn new() -> Self {
+        EndpointAllocator {
+            next_endpoint_number: 1,
+            next_free_offset: NUM_ENDPOINTS * 8,
+            out_taken: 0,
+            in_taken: 0,
+        }
+    }
+
     fn alloc_ep(&mut self, direction: UsbDirection, config: &EndpointConfig) 
         -> Result<(EndpointDescriptor, EndpointBuffer)>
     {
@@ -267,15 +280,6 @@ impl EndpointAllocator {
 }
 
 impl usb_device::bus::EndpointAllocator<UsbBus> for EndpointAllocator {
-    fn new() -> Self {
-        EndpointAllocator {
-            next_endpoint_number: 1,
-            next_free_offset: NUM_ENDPOINTS * 8,
-            out_taken: 0,
-            in_taken: 0,
-        }
-    }
-
     fn alloc_out(&mut self, config: &EndpointConfig) -> Result<EndpointOut> {
         let (descriptor, buf) = self.alloc_ep(UsbDirection::Out, config)?;
 
