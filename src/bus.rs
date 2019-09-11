@@ -56,7 +56,7 @@ impl<PINS: UsbPins+Sync> UsbBus<PINS> {
     /// This function will be called with USB peripheral powered down
     /// and interrupts disabled.
     /// It should perform disconnect in a platform-specific way.
-    pub fn force_reenumeration<F: FnOnce()>(&mut self, disconnect: F)
+    pub fn force_reenumeration<F: FnOnce()>(&self, disconnect: F)
     {
         interrupt::free(|cs| {
             let regs = self.regs.borrow(cs);
