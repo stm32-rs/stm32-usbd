@@ -12,7 +12,6 @@ pub use stm32l0xx_hal as hal;
 #[cfg(feature = "stm32l4")]
 pub use stm32l4xx_hal as hal;
 
-
 // USB PAC reexports
 #[cfg(feature = "stm32f0")]
 pub use hal::stm32::USB;
@@ -30,41 +29,40 @@ pub use hal::stm32::USB;
 // compatible with definitions for older ones.
 pub use crate::pac::usb;
 
-
 #[cfg(feature = "ram_access_1x16")]
 pub type UsbAccessType = u32;
 #[cfg(feature = "ram_access_2x16")]
 pub type UsbAccessType = u16;
-
 
 #[cfg(not(feature = "ram_addr_40006c00"))]
 pub const EP_MEM_ADDR: usize = 0x4000_6000;
 #[cfg(feature = "ram_addr_40006c00")]
 pub const EP_MEM_ADDR: usize = 0x4000_6C00;
 
-
 #[cfg(feature = "ram_size_512")]
 pub const EP_MEM_SIZE: usize = 512;
 #[cfg(feature = "ram_size_1024")]
 pub const EP_MEM_SIZE: usize = 1024;
 
-
 pub const NUM_ENDPOINTS: usize = 8;
-
 
 /// Enables USB peripheral
 pub fn apb_usb_enable() {
     cortex_m::interrupt::free(|_| {
         let rcc = unsafe { (&*hal::stm32::RCC::ptr()) };
         match () {
-            #[cfg(any(feature = "stm32f0", feature = "stm32f1", feature = "stm32f3", feature = "stm32l0"))]
+            #[cfg(any(
+                feature = "stm32f0",
+                feature = "stm32f1",
+                feature = "stm32f3",
+                feature = "stm32l0"
+            ))]
             () => rcc.apb1enr.modify(|_, w| w.usben().set_bit()),
             #[cfg(feature = "stm32l4")]
             () => rcc.apb1enr1.modify(|_, w| w.usbfsen().set_bit()),
         }
     });
 }
-
 
 /// Wrapper around device-specific peripheral that provides unified register interface
 pub struct UsbRegisters(USB);
@@ -89,14 +87,12 @@ impl UsbRegisters {
     }
 }
 
-
-
-pub trait UsbPins: Send { }
+pub trait UsbPins: Send {}
 
 #[cfg(feature = "stm32f0")]
 pub mod usb_pins {
-    use super::hal::gpio::{Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
+    use super::hal::gpio::{Floating, Input};
 
     pub type UsbPinsType = (PA11<Input<Floating>>, PA12<Input<Floating>>);
     impl super::UsbPins for UsbPinsType {}
@@ -104,8 +100,8 @@ pub mod usb_pins {
 
 #[cfg(feature = "stm32f1")]
 pub mod usb_pins {
-    use super::hal::gpio::{Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
+    use super::hal::gpio::{Floating, Input};
 
     pub type UsbPinsType = (PA11<Input<Floating>>, PA12<Input<Floating>>);
     impl super::UsbPins for UsbPinsType {}
@@ -113,8 +109,8 @@ pub mod usb_pins {
 
 #[cfg(feature = "stm32f3")]
 pub mod usb_pins {
-    use super::hal::gpio::AF14;
     use super::hal::gpio::gpioa::{PA11, PA12};
+    use super::hal::gpio::AF14;
 
     pub type UsbPinsType = (PA11<AF14>, PA12<AF14>);
     impl super::UsbPins for UsbPinsType {}
@@ -122,8 +118,8 @@ pub mod usb_pins {
 
 #[cfg(feature = "stm32l0")]
 pub mod usb_pins {
-    use super::hal::gpio::{Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
+    use super::hal::gpio::{Floating, Input};
 
     pub type UsbPinsType = (PA11<Input<Floating>>, PA12<Input<Floating>>);
     impl super::UsbPins for UsbPinsType {}
@@ -131,12 +127,12 @@ pub mod usb_pins {
 
 #[cfg(feature = "stm32l4")]
 pub mod usb_pins {
-    use super::hal::gpio::{AF10, Alternate, Input, Floating};
     use super::hal::gpio::gpioa::{PA11, PA12};
+    use super::hal::gpio::{Alternate, Floating, Input, AF10};
 
     pub type UsbPinsType = (
         PA11<Alternate<AF10, Input<Floating>>>,
-        PA12<Alternate<AF10, Input<Floating>>>
+        PA12<Alternate<AF10, Input<Floating>>>,
     );
     impl super::UsbPins for UsbPinsType {}
 }
