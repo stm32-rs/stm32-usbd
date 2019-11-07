@@ -36,4 +36,7 @@ mod pac;
 pub unsafe trait UsbPeripheral: Send + Sync {
     /// Pointer to the register block
     const REGISTERS: *const ();
+
+    /// Enables USB device on its peripheral bus
+    fn enable();
 }

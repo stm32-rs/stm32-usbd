@@ -33,16 +33,3 @@ pub const EP_MEM_SIZE: usize = 512;
 pub const EP_MEM_SIZE: usize = 1024;
 
 pub const NUM_ENDPOINTS: usize = 8;
-
-/// Enables USB peripheral
-pub fn apb_usb_enable() {
-    cortex_m::interrupt::free(|_| {
-        let rcc = unsafe { (&*hal::stm32::RCC::ptr()) };
-        match () {
-            #[cfg(any(feature = "stm32f0", feature = "stm32f1", feature = "stm32f3", feature = "stm32l0"))]
-            () => rcc.apb1enr.modify(|_, w| w.usben().set_bit()),
-            #[cfg(feature = "stm32l4")]
-            () => rcc.apb1enr1.modify(|_, w| w.usbfsen().set_bit()),
-        }
-    });
-}

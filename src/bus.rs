@@ -10,7 +10,7 @@ use usb_device::{Result, UsbDirection, UsbError};
 use crate::endpoint::{calculate_count_rx, Endpoint, EndpointStatus};
 use crate::endpoint_memory::EndpointMemoryAllocator;
 use crate::registers::UsbRegisters;
-use crate::target::{apb_usb_enable, NUM_ENDPOINTS};
+use crate::target::NUM_ENDPOINTS;
 use crate::UsbPeripheral;
 
 /// USB peripheral driver for STM32 microcontrollers.
@@ -25,7 +25,7 @@ pub struct UsbBus<USB> {
 impl<USB: UsbPeripheral> UsbBus<USB> {
     /// Constructs a new USB peripheral driver.
     pub fn new(peripheral: USB) -> UsbBusAllocator<Self> {
-        apb_usb_enable();
+        USB::enable();
 
         let bus = UsbBus {
             peripheral,
