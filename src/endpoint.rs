@@ -67,7 +67,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
     }
 
     pub fn set_out_buf(&mut self, buffer: EndpointBuffer, size_bits: u16) {
-        let offset = buffer.offset();
+        let offset = buffer.offset::<USB>();
         self.out_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
@@ -80,7 +80,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
     }
 
     pub fn set_in_buf(&mut self, buffer: EndpointBuffer) {
-        let offset = buffer.offset();
+        let offset = buffer.offset::<USB>();
         self.in_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
@@ -89,7 +89,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
     }
 
     fn descr(&self) -> &'static BufferDescriptor {
-        EndpointMemoryAllocator::buffer_descriptor(self.index)
+        EndpointMemoryAllocator::<USB>::buffer_descriptor(self.index)
     }
 
     fn reg(&self) -> &'static usb::EPR {

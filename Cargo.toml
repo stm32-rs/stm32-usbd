@@ -15,16 +15,9 @@ cortex-m = "0.6.1"
 usb-device = "0.2.3"
 
 [features]
-# Dedicated USB RAM size
-ram_size_512 = []
-ram_size_1024 = []
-
 # USB RAM access scheme
 ram_access_1x16 = []
 ram_access_2x16 = []
-
-# Hacks
-ram_addr_40006c00 = []
 
 # Known devices
 stm32f042xx = ['new_gen']
@@ -34,11 +27,11 @@ stm32f078xx = ['new_gen']
 stm32f103xx = ['old_gen']
 stm32f303xc = ['old_gen']
 stm32l0x2xx = ['new_gen']
-stm32l4x2xx = ['new_gen', 'ram_addr_40006c00']
+stm32l4x2xx = ['new_gen']
 
 # Auxiliary features
-old_gen = ['ram_size_512', 'ram_access_1x16']
-new_gen = ['ram_size_1024', 'ram_access_2x16']
+old_gen = ['ram_access_1x16']
+new_gen = ['ram_access_2x16']
 
 [package.metadata.docs.rs]
 features = ["stm32f103xx"]

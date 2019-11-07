@@ -17,7 +17,7 @@ pub struct UsbBus<USB> {
     peripheral: USB,
     regs: Mutex<UsbRegisters<USB>>,
     endpoints: [Endpoint<USB>; NUM_ENDPOINTS],
-    ep_allocator: EndpointMemoryAllocator,
+    ep_allocator: EndpointMemoryAllocator<USB>,
     max_endpoint: usize,
 }
 
