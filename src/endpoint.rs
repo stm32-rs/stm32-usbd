@@ -1,12 +1,17 @@
 use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator};
 use crate::registers::UsbRegisters;
-use crate::target::{usb, UsbAccessType};
+use crate::target::UsbAccessType;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
 use core::mem;
 use cortex_m::interrupt::{self, CriticalSection, Mutex};
 use usb_device::endpoint::EndpointType;
 use usb_device::{Result, UsbError};
+
+// Use bundled register definitions instead of device-specific ones
+// This should work because register definitions from newer chips seem to be
+// compatible with definitions for older ones.
+pub use crate::pac::usb;
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]

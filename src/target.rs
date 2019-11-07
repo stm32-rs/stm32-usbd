@@ -1,10 +1,5 @@
 //! Target-specific definitions
 
-// Use bundled register definitions instead of device-specific ones
-// This should work because register definitions from newer chips seem to be
-// compatible with definitions for older ones.
-pub use crate::pac::usb;
-
 #[cfg(feature = "ram_access_1x16")]
 pub type UsbAccessType = u32;
 #[cfg(feature = "ram_access_2x16")]
