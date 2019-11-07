@@ -15,13 +15,6 @@ cortex-m = "0.6.1"
 usb-device = "0.2.3"
 
 [features]
-# Device family
-stm32f0 = ['family-selected']
-stm32f1 = ['family-selected']
-stm32f3 = ['family-selected']
-stm32l0 = ['family-selected']
-stm32l4 = ['family-selected']
-
 # Dedicated USB RAM size
 ram_size_512 = []
 ram_size_1024 = []
@@ -40,14 +33,14 @@ ram_addr_40006c00 = []
 delay_workaround = []  # deprecated: cortex-m 0.6.1 contains a fix
 
 # Known devices
-stm32f042xx = ['stm32f0', 'new_gen']
-stm32f048xx = ['stm32f0', 'new_gen']
-stm32f072xx = ['stm32f0', 'new_gen']
-stm32f078xx = ['stm32f0', 'new_gen']
-stm32f103xx = ['stm32f1', 'old_gen']
-stm32f303xc = ['stm32f3', 'old_gen']
-stm32l0x2xx = ['stm32l0', 'new_gen']
-stm32l4x2xx = ['stm32l4', 'new_gen', 'ram_addr_40006c00']
+stm32f042xx = ['new_gen']
+stm32f048xx = ['new_gen']
+stm32f072xx = ['new_gen']
+stm32f078xx = ['new_gen']
+stm32f103xx = ['old_gen']
+stm32f303xc = ['old_gen']
+stm32l0x2xx = ['new_gen']
+stm32l4x2xx = ['new_gen', 'ram_addr_40006c00']
 
 # Auxiliary features
 old_gen = ['ram_size_512', 'ram_access_1x16']
