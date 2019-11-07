@@ -12,20 +12,15 @@ keywords = ["no-std", "embedded", "usb"]
 [dependencies]
 vcell = "0.1.2"
 cortex-m = "0.6.1"
-stm32f0xx-hal = { version = "0.15", features = ["rt"], optional = true }
-stm32f1xx-hal = { version = "0.4", features = ["rt"], optional = true }
-stm32f3xx-hal = { version = "0.3", features = ["rt"], optional = true }
-stm32l0xx-hal = { version = "0.3", features = ["rt"], optional = true }
-stm32l4xx-hal = { version = "0.5", features = ["rt"], optional = true }
 usb-device = "0.2.3"
 
 [features]
 # Device family
-stm32f0 = ['stm32f0xx-hal', 'family-selected']
-stm32f1 = ['stm32f1xx-hal', 'family-selected']
-stm32f3 = ['stm32f3xx-hal', 'family-selected']
-stm32l0 = ['stm32l0xx-hal', 'family-selected']
-stm32l4 = ['stm32l4xx-hal', 'family-selected']
+stm32f0 = ['family-selected']
+stm32f1 = ['family-selected']
+stm32f3 = ['family-selected']
+stm32l0 = ['family-selected']
+stm32l4 = ['family-selected']
 
 # Dedicated USB RAM size
 ram_size_512 = []
@@ -45,14 +40,14 @@ ram_addr_40006c00 = []
 delay_workaround = []  # deprecated: cortex-m 0.6.1 contains a fix
 
 # Known devices
-stm32f042xx = ['stm32f0', 'stm32f0xx-hal/stm32f042', 'new_gen']
-stm32f048xx = ['stm32f0', 'stm32f0xx-hal/stm32f048', 'new_gen']
-stm32f072xx = ['stm32f0', 'stm32f0xx-hal/stm32f072', 'new_gen']
-stm32f078xx = ['stm32f0', 'stm32f0xx-hal/stm32f078', 'new_gen']
-stm32f103xx = ['stm32f1', 'stm32f1xx-hal/stm32f103', 'old_gen']
-stm32f303xc = ['stm32f3', 'stm32f3xx-hal/stm32f303', 'old_gen']
-stm32l0x2xx = ['stm32l0', 'stm32l0xx-hal/stm32l0x2', 'new_gen']
-stm32l4x2xx = ['stm32l4', 'stm32l4xx-hal/stm32l4x2', 'new_gen', 'ram_addr_40006c00']
+stm32f042xx = ['stm32f0', 'new_gen']
+stm32f048xx = ['stm32f0', 'new_gen']
+stm32f072xx = ['stm32f0', 'new_gen']
+stm32f078xx = ['stm32f0', 'new_gen']
+stm32f103xx = ['stm32f1', 'old_gen']
+stm32f303xc = ['stm32f3', 'old_gen']
+stm32l0x2xx = ['stm32l0', 'new_gen']
+stm32l4x2xx = ['stm32l4', 'new_gen', 'ram_addr_40006c00']
 
 # Auxiliary features
 old_gen = ['ram_size_512', 'ram_access_1x16']
