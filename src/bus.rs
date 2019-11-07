@@ -1,7 +1,6 @@
 //! USB peripheral driver.
 
 use core::mem;
-use cortex_m::asm::delay;
 use cortex_m::interrupt::{self, Mutex};
 use usb_device::bus::{PollResult, UsbBusAllocator};
 use usb_device::endpoint::{EndpointAddress, EndpointType};
@@ -141,9 +140,7 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
 
             regs.cntr.modify(|_, w| w.pdwn().clear_bit());
 
-            // There is a chip specific startup delay. For STM32F103xx it's 1µs and this should wait for
-            // at least that long.
-            delay(72);
+            USB::startup_delay();
 
             regs.btable.modify(|_, w| w.btable().bits(0));
             regs.cntr.modify(|_, w| { w

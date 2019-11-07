@@ -39,4 +39,10 @@ pub unsafe trait UsbPeripheral: Send + Sync {
 
     /// Enables USB device on its peripheral bus
     fn enable();
+
+    /// Performs a chip specific startup delay
+    ///
+    /// This function is called in `UsbBus::enable()` after deasserting the `pdwn` bit and before
+    /// peripheral initialization.
+    fn startup_delay();
 }
