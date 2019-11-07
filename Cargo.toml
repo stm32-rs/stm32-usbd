@@ -20,18 +20,14 @@ ram_access_1x16 = []
 ram_access_2x16 = []
 
 # Known devices
-stm32f042xx = ['new_gen']
-stm32f048xx = ['new_gen']
-stm32f072xx = ['new_gen']
-stm32f078xx = ['new_gen']
-stm32f103xx = ['old_gen']
-stm32f303xc = ['old_gen']
-stm32l0x2xx = ['new_gen']
-stm32l4x2xx = ['new_gen']
-
-# Auxiliary features
-old_gen = ['ram_access_1x16']
-new_gen = ['ram_access_2x16']
+stm32f042xx = ['ram_access_2x16']
+stm32f048xx = ['ram_access_2x16']
+stm32f072xx = ['ram_access_2x16']
+stm32f078xx = ['ram_access_2x16']
+stm32f103xx = ['ram_access_1x16']
+stm32f303xc = ['ram_access_1x16']
+stm32l0x2xx = ['ram_access_2x16']
+stm32l4x2xx = ['ram_access_2x16']
 
 [package.metadata.docs.rs]
 features = ["stm32f103xx"]
