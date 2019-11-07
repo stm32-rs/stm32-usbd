@@ -31,3 +31,11 @@ pub use crate::target::usb_pins::UsbPinsType;
 pub type UsbBusType = UsbBus<UsbPinsType>;
 
 mod pac;
+
+/// A trait for device-specific USB peripherals. Implement this to add support for a new hardware
+/// platform. Peripherals that have this trait must have the same register block as STM32 USBFS
+/// peripherals.
+pub unsafe trait UsbPeripheral: Send + Sync {
+    /// Pointer to the register block
+    const REGISTERS: *const ();
+}
