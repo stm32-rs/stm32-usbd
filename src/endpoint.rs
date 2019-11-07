@@ -136,9 +136,7 @@ impl Endpoint {
             let reg = self.reg();
 
             match reg.read().stat_tx().bits().into() {
-                EndpointStatus::Valid | EndpointStatus::Disabled => {
-                    return Err(UsbError::WouldBlock)
-                }
+                EndpointStatus::Valid | EndpointStatus::Disabled => return Err(UsbError::WouldBlock),
                 _ => {}
             };
 

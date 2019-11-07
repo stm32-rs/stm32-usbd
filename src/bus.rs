@@ -78,10 +78,7 @@ impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         max_packet_size: u16,
         _interval: u8,
     ) -> Result<EndpointAddress> {
-        for index in ep_addr
-            .map(|a| a.index()..a.index() + 1)
-            .unwrap_or(1..NUM_ENDPOINTS)
-        {
+        for index in ep_addr.map(|a| a.index()..a.index() + 1).unwrap_or(1..NUM_ENDPOINTS) {
             let ep = &mut self.endpoints[index];
 
             match ep.ep_type() {
@@ -173,10 +170,7 @@ impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
     fn set_device_address(&self, addr: u8) {
         interrupt::free(|cs| {
-            self.regs
-                .borrow(cs)
-                .daddr
-                .modify(|_, w| w.add().bits(addr as u8));
+            self.regs.borrow(cs).daddr.modify(|_, w| w.add().bits(addr as u8));
         });
     }
 
@@ -189,7 +183,6 @@ impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             if istr.wkup().bit_is_set() {
                 // Interrupt flag bits are write-0-to-clear, other bits should be written as 1 to avoid
                 // race conditions
-                #[rustfmt::skip]
                 regs.istr.write(|w| unsafe { w.bits(0xffff) }.wkup().clear_bit());
 
                 // Required by datasheet
@@ -197,13 +190,11 @@ impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
                 PollResult::Resume
             } else if istr.reset().bit_is_set() {
-                regs.istr
-                    .write(|w| unsafe { w.bits(0xffff) }.reset().clear_bit());
+                regs.istr.write(|w| unsafe { w.bits(0xffff) }.reset().clear_bit());
 
                 PollResult::Reset
             } else if istr.susp().bit_is_set() {
-                regs.istr
-                    .write(|w| unsafe { w.bits(0xffff) }.susp().clear_bit());
+                regs.istr.write(|w| unsafe { w.bits(0xffff) }.susp().clear_bit());
 
                 PollResult::Suspend
             } else if istr.ctr().bit_is_set() {
