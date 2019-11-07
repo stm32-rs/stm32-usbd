@@ -94,7 +94,7 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
     }
 
     pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
-        assert!(size & 1 == 0);
+        assert_eq!(size & 1, 0);
         assert!(size < USB::EP_MEMORY_SIZE);
 
         let offset = self.next_free_offset;
