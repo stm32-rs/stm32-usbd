@@ -6,8 +6,10 @@
 #![no_std]
 
 #[cfg(not(feature = "family-selected"))]
-compile_error!("This crate requires one of the device family features enabled.
-Check Cargo.toml for supported families ('Device family' section)");
+compile_error!(
+    "This crate requires one of the device family features enabled.
+Check Cargo.toml for supported families ('Device family' section)"
+);
 
 #[cfg(feature = "family-selected")]
 mod endpoint;
