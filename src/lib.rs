@@ -21,6 +21,9 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     /// Pointer to the register block
     const REGISTERS: *const ();
 
+    /// Embedded pull-up resistor on USB_DP line
+    const DP_PULL_UP_FEATURE: bool;
+
     /// Enables USB device on its peripheral bus
     fn enable();
 

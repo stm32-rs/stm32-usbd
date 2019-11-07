@@ -26,7 +26,6 @@ ram_access_2x16 = []
 # USB peripheral features
 lpm_support = []
 bcd_support = []
-dp_pull_up_support = []
 
 # Hacks
 ram_addr_40006c00 = []
@@ -43,7 +42,7 @@ stm32l4x2xx = ['new_gen', 'ram_addr_40006c00']
 
 # Auxiliary features
 old_gen = ['ram_size_512', 'ram_access_1x16']
-new_gen = ['ram_size_1024', 'ram_access_2x16', 'lpm_support', 'bcd_support', 'dp_pull_up_support']
+new_gen = ['ram_size_1024', 'ram_access_2x16', 'lpm_support', 'bcd_support']
 family-selected = []
 
 [package.metadata.docs.rs]

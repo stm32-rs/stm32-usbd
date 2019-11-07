@@ -152,8 +152,9 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
             });
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
 
-            #[cfg(feature = "dp_pull_up_support")]
-            regs.bcdr.modify(|_, w| w.dppu().set_bit());
+            if USB::DP_PULL_UP_FEATURE {
+                regs.bcdr.modify(|_, w| w.dppu().set_bit());
+            }
         });
     }
 
