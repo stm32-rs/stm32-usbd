@@ -30,7 +30,6 @@ dp_pull_up_support = []
 
 # Hacks
 ram_addr_40006c00 = []
-delay_workaround = []  # deprecated: cortex-m 0.6.1 contains a fix
 
 # Known devices
 stm32f042xx = ['new_gen']
