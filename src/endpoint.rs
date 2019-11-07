@@ -1,5 +1,8 @@
 use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator};
-use crate::target::{usb, UsbAccessType, UsbRegisters};
+use crate::registers::UsbRegisters;
+use crate::target::{usb, UsbAccessType};
+use crate::UsbPeripheral;
+use core::marker::PhantomData;
 use core::mem;
 use cortex_m::interrupt::{self, CriticalSection, Mutex};
 use usb_device::endpoint::EndpointType;
@@ -7,11 +10,12 @@ use usb_device::{Result, UsbError};
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]
-pub struct Endpoint {
+pub struct Endpoint<USB> {
     out_buf: Option<Mutex<EndpointBuffer>>,
     in_buf: Option<Mutex<EndpointBuffer>>,
     ep_type: Option<EndpointType>,
     index: u8,
+    _marker: PhantomData<USB>,
 }
 
 pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
@@ -34,13 +38,14 @@ pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
     }
 }
 
-impl Endpoint {
-    pub fn new(index: u8) -> Endpoint {
-        Endpoint {
+impl<USB: UsbPeripheral> Endpoint<USB> {
+    pub fn new(index: u8) -> Self {
+        Self {
             out_buf: None,
             in_buf: None,
             ep_type: None,
             index,
+            _marker: PhantomData,
         }
     }
 
@@ -83,7 +88,7 @@ impl Endpoint {
     }
 
     fn reg(&self) -> &'static usb::EPR {
-        UsbRegisters::ep_register(self.index)
+        UsbRegisters::<USB>::ep_register(self.index)
     }
 
     #[rustfmt::skip]

@@ -1,6 +1,5 @@
 //! USB peripheral driver.
 
-use core::marker::PhantomData;
 use core::mem;
 use cortex_m::asm::delay;
 use cortex_m::interrupt::{self, Mutex};
@@ -10,28 +9,31 @@ use usb_device::{Result, UsbDirection, UsbError};
 
 use crate::endpoint::{calculate_count_rx, Endpoint, EndpointStatus};
 use crate::endpoint_memory::EndpointMemoryAllocator;
-use crate::target::{apb_usb_enable, UsbPins, UsbRegisters, NUM_ENDPOINTS, USB};
+use crate::registers::UsbRegisters;
+use crate::target::{apb_usb_enable, NUM_ENDPOINTS};
+use crate::UsbPeripheral;
 
 /// USB peripheral driver for STM32 microcontrollers.
-pub struct UsbBus<PINS> {
-    regs: Mutex<UsbRegisters>,
-    endpoints: [Endpoint; NUM_ENDPOINTS],
+pub struct UsbBus<USB> {
+    peripheral: USB,
+    regs: Mutex<UsbRegisters<USB>>,
+    endpoints: [Endpoint<USB>; NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
-    pins: PhantomData<PINS>,
 }
 
-impl<PINS: UsbPins + Sync> UsbBus<PINS> {
+impl<USB: UsbPeripheral> UsbBus<USB> {
     /// Constructs a new USB peripheral driver.
-    pub fn new(regs: USB, _pins: PINS) -> UsbBusAllocator<Self> {
+    pub fn new(peripheral: USB) -> UsbBusAllocator<Self> {
         apb_usb_enable();
 
         let bus = UsbBus {
-            regs: Mutex::new(UsbRegisters::new(regs)),
+            peripheral,
+            regs: Mutex::new(UsbRegisters::new()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
             endpoints: unsafe {
-                let mut endpoints: [Endpoint; NUM_ENDPOINTS] = mem::uninitialized();
+                let mut endpoints: [Endpoint<USB>; NUM_ENDPOINTS] = mem::uninitialized();
 
                 for i in 0..NUM_ENDPOINTS {
                     endpoints[i] = Endpoint::new(i as u8);
@@ -39,10 +41,13 @@ impl<PINS: UsbPins + Sync> UsbBus<PINS> {
 
                 endpoints
             },
-            pins: PhantomData,
         };
 
         UsbBusAllocator::new(bus)
+    }
+
+    pub fn free(self) -> USB {
+        self.peripheral
     }
 
     /// Simulates a disconnect from the USB bus, causing the host to reset and re-enumerate the
@@ -69,7 +74,7 @@ impl<PINS: UsbPins + Sync> UsbBus<PINS> {
     }
 }
 
-impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
+impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
     fn alloc_ep(
         &mut self,
         ep_dir: UsbDirection,

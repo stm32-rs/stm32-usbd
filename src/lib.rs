@@ -17,6 +17,8 @@ mod endpoint;
 #[cfg(feature = "family-selected")]
 mod endpoint_memory;
 
+mod registers;
+
 #[cfg(feature = "family-selected")]
 mod target;
 

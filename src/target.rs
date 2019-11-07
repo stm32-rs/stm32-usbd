@@ -12,18 +12,6 @@ pub use stm32l0xx_hal as hal;
 #[cfg(feature = "stm32l4")]
 pub use stm32l4xx_hal as hal;
 
-// USB PAC reexports
-#[cfg(feature = "stm32f0")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32f1")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32f3")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32l0")]
-pub use hal::stm32::USB;
-#[cfg(feature = "stm32l4")]
-pub use hal::stm32::USB;
-
 // Use bundled register definitions instead of device-specific ones
 // This should work because register definitions from newer chips seem to be
 // compatible with definitions for older ones.
@@ -57,29 +45,6 @@ pub fn apb_usb_enable() {
             () => rcc.apb1enr1.modify(|_, w| w.usbfsen().set_bit()),
         }
     });
-}
-
-/// Wrapper around device-specific peripheral that provides unified register interface
-pub struct UsbRegisters(USB);
-
-impl core::ops::Deref for UsbRegisters {
-    type Target = usb::RegisterBlock;
-
-    fn deref(&self) -> &Self::Target {
-        let ptr = USB::ptr() as *const Self::Target;
-        unsafe { &*ptr }
-    }
-}
-
-impl UsbRegisters {
-    pub fn new(usb: USB) -> Self {
-        Self(usb)
-    }
-
-    pub fn ep_register(index: u8) -> &'static usb::EPR {
-        let usb_ptr = USB::ptr() as *const usb::RegisterBlock;
-        unsafe { &(*usb_ptr).epr[index as usize] }
-    }
 }
 
 pub trait UsbPins: Send {}
