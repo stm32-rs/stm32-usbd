@@ -9,10 +9,10 @@ pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
 impl EndpointBuffer {
     pub fn new<USB: UsbPeripheral>(offset_bytes: usize, size_bytes: usize) -> Self {
-        let EP_MEM_PTR = USB::EP_MEMORY as *mut VolatileCell<UsbAccessType>;
+        let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<UsbAccessType>;
 
         let mem =
-            unsafe { slice::from_raw_parts_mut(EP_MEM_PTR.offset((offset_bytes >> 1) as isize), size_bytes >> 1) };
+            unsafe { slice::from_raw_parts_mut(ep_mem_ptr.offset((offset_bytes >> 1) as isize), size_bytes >> 1) };
         Self(mem)
     }
 
