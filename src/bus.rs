@@ -1,6 +1,6 @@
 //! USB peripheral driver.
 
-use core::mem;
+use core::mem::{self, MaybeUninit};
 use cortex_m::interrupt::{self, Mutex};
 use usb_device::bus::{PollResult, UsbBusAllocator};
 use usb_device::endpoint::{EndpointAddress, EndpointType};
@@ -31,14 +31,15 @@ impl<USB: UsbPeripheral> UsbBus<USB> {
             regs: Mutex::new(UsbRegisters::new()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
-            endpoints: unsafe {
-                let mut endpoints: [Endpoint<USB>; NUM_ENDPOINTS] = mem::uninitialized();
+            endpoints: {
+                let mut endpoints: [MaybeUninit<Endpoint<USB>>; NUM_ENDPOINTS] =
+                    unsafe { MaybeUninit::uninit().assume_init() };
 
                 for i in 0..NUM_ENDPOINTS {
-                    endpoints[i] = Endpoint::new(i as u8);
+                    endpoints[i] = MaybeUninit::new(Endpoint::new(i as u8));
                 }
 
-                endpoints
+                unsafe { mem::transmute::<_, [Endpoint<USB>; NUM_ENDPOINTS]>(endpoints) }
             },
         };
 
