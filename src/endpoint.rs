@@ -1,6 +1,5 @@
-use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator};
+use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator, UsbAccessType};
 use crate::registers::UsbRegisters;
-use crate::target::UsbAccessType;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
 use core::mem;
@@ -12,6 +11,8 @@ use usb_device::{Result, UsbError};
 // This should work because register definitions from newer chips seem to be
 // compatible with definitions for older ones.
 pub use crate::pac::usb;
+
+pub const NUM_ENDPOINTS: usize = 8;
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]

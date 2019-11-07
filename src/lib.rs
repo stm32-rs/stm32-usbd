@@ -9,7 +9,6 @@ pub mod bus;
 mod endpoint;
 mod endpoint_memory;
 mod registers;
-mod target;
 pub use crate::bus::UsbBus;
 
 mod pac;

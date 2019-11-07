@@ -1,9 +1,14 @@
-use crate::target::{UsbAccessType, NUM_ENDPOINTS};
+use crate::endpoint::NUM_ENDPOINTS;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
 use core::{mem, slice};
 use usb_device::{Result, UsbError};
 use vcell::VolatileCell;
+
+#[cfg(feature = "ram_access_1x16")]
+pub type UsbAccessType = u32;
+#[cfg(feature = "ram_access_2x16")]
+pub type UsbAccessType = u16;
 
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 

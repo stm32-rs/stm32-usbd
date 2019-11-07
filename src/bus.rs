@@ -6,10 +6,9 @@ use usb_device::bus::{PollResult, UsbBusAllocator};
 use usb_device::endpoint::{EndpointAddress, EndpointType};
 use usb_device::{Result, UsbDirection, UsbError};
 
-use crate::endpoint::{calculate_count_rx, Endpoint, EndpointStatus};
+use crate::endpoint::{calculate_count_rx, Endpoint, EndpointStatus, NUM_ENDPOINTS};
 use crate::endpoint_memory::EndpointMemoryAllocator;
 use crate::registers::UsbRegisters;
-use crate::target::NUM_ENDPOINTS;
 use crate::UsbPeripheral;
 
 /// USB peripheral driver for STM32 microcontrollers.
