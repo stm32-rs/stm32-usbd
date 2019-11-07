@@ -39,7 +39,6 @@ stm32l4x2xx = ['new_gen', 'ram_addr_40006c00']
 # Auxiliary features
 old_gen = ['ram_size_512', 'ram_access_1x16']
 new_gen = ['ram_size_1024', 'ram_access_2x16']
-family-selected = []
 
 [package.metadata.docs.rs]
 features = ["stm32f103xx"]
