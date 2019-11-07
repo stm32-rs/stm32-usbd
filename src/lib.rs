@@ -27,10 +27,6 @@ pub mod bus;
 
 #[cfg(feature = "family-selected")]
 pub use crate::bus::UsbBus;
-#[cfg(feature = "family-selected")]
-pub use crate::target::usb_pins::UsbPinsType;
-#[cfg(feature = "family-selected")]
-pub type UsbBusType = UsbBus<UsbPinsType>;
 
 mod pac;
 
