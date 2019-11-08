@@ -5,6 +5,11 @@
 
 #![no_std]
 
+#[cfg(not(any(feature = "ram_access_1x16", feature = "ram_access_2x16")))]
+compile_error!("This crate requires one of the ram_access features enabled");
+#[cfg(all(feature = "ram_access_1x16", feature = "ram_access_2x16"))]
+compile_error!("Multiple ram_access features are specified. Only a single feature can be specified.");
+
 pub mod bus;
 mod endpoint;
 mod endpoint_memory;
