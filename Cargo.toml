@@ -14,6 +14,9 @@ vcell = "0.1.2"
 cortex-m = "0.6.1"
 usb-device = "0.2.3"
 
+[dev-dependencies]
+stm32f1xx-hal = { version = "0.4.0", features = ["stm32f103"] }
+
 [features]
 # USB RAM access scheme
 ram_access_1x16 = []
@@ -21,3 +24,7 @@ ram_access_2x16 = []
 
 [package.metadata.docs.rs]
 features = ["ram_access_2x16"]
+
+[[example]]
+name = "hal"
+required-features = ["ram_access_1x16"]
