@@ -1,11 +1,11 @@
 //! USB peripheral
 
-use stm32f1xx_hal::pac::{USB, RCC};
 use stm32_usbd::UsbPeripheral;
+use stm32f1xx_hal::pac::{RCC, USB};
 
+pub use stm32_usbd::UsbBus;
 use stm32f1xx_hal::gpio::gpioa::{PA11, PA12};
 use stm32f1xx_hal::gpio::{Floating, Input};
-pub use stm32_usbd::UsbBus;
 
 pub struct Peripheral {
     pub usb: USB,
@@ -42,7 +42,6 @@ unsafe impl UsbPeripheral for Peripheral {
 }
 
 pub type UsbBusType = UsbBus<Peripheral>;
-
 
 fn main() -> ! {
     loop {}
