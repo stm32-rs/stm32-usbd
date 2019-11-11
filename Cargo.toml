@@ -19,15 +19,5 @@ usb-device = "0.2.3"
 ram_access_1x16 = []
 ram_access_2x16 = []
 
-# Known devices
-stm32f042xx = ['ram_access_2x16']
-stm32f048xx = ['ram_access_2x16']
-stm32f072xx = ['ram_access_2x16']
-stm32f078xx = ['ram_access_2x16']
-stm32f103xx = ['ram_access_1x16']
-stm32f303xc = ['ram_access_1x16']
-stm32l0x2xx = ['ram_access_2x16']
-stm32l4x2xx = ['ram_access_2x16']
-
 [package.metadata.docs.rs]
-features = ["stm32f103xx"]
+features = ["ram_access_2x16"]
