@@ -12,52 +12,19 @@ keywords = ["no-std", "embedded", "usb"]
 [dependencies]
 vcell = "0.1.2"
 cortex-m = "0.6.1"
-stm32f0xx-hal = { version = "0.15", features = ["rt"], optional = true }
-stm32f1xx-hal = { version = "0.4", features = ["rt"], optional = true }
-stm32f3xx-hal = { version = "0.3", features = ["rt"], optional = true }
-stm32l0xx-hal = { version = "0.3", features = ["rt"], optional = true }
-stm32l4xx-hal = { version = "0.5", features = ["rt"], optional = true }
 usb-device = "0.2.3"
 
+[dev-dependencies]
+stm32f1xx-hal = { version = "0.4.0", features = ["stm32f103"] }
+
 [features]
-# Device family
-stm32f0 = ['stm32f0xx-hal', 'family-selected']
-stm32f1 = ['stm32f1xx-hal', 'family-selected']
-stm32f3 = ['stm32f3xx-hal', 'family-selected']
-stm32l0 = ['stm32l0xx-hal', 'family-selected']
-stm32l4 = ['stm32l4xx-hal', 'family-selected']
-
-# Dedicated USB RAM size
-ram_size_512 = []
-ram_size_1024 = []
-
 # USB RAM access scheme
 ram_access_1x16 = []
 ram_access_2x16 = []
 
-# USB peripheral features
-lpm_support = []
-bcd_support = []
-dp_pull_up_support = []
-
-# Hacks
-ram_addr_40006c00 = []
-delay_workaround = []  # deprecated: cortex-m 0.6.1 contains a fix
-
-# Known devices
-stm32f042xx = ['stm32f0', 'stm32f0xx-hal/stm32f042', 'new_gen']
-stm32f048xx = ['stm32f0', 'stm32f0xx-hal/stm32f048', 'new_gen']
-stm32f072xx = ['stm32f0', 'stm32f0xx-hal/stm32f072', 'new_gen']
-stm32f078xx = ['stm32f0', 'stm32f0xx-hal/stm32f078', 'new_gen']
-stm32f103xx = ['stm32f1', 'stm32f1xx-hal/stm32f103', 'old_gen']
-stm32f303xc = ['stm32f3', 'stm32f3xx-hal/stm32f303', 'old_gen']
-stm32l0x2xx = ['stm32l0', 'stm32l0xx-hal/stm32l0x2', 'new_gen']
-stm32l4x2xx = ['stm32l4', 'stm32l4xx-hal/stm32l4x2', 'new_gen', 'ram_addr_40006c00']
-
-# Auxiliary features
-old_gen = ['ram_size_512', 'ram_access_1x16']
-new_gen = ['ram_size_1024', 'ram_access_2x16', 'lpm_support', 'bcd_support', 'dp_pull_up_support']
-family-selected = []
-
 [package.metadata.docs.rs]
-features = ["stm32f103xx"]
+features = ["ram_access_2x16"]
+
+[[example]]
+name = "hal"
+required-features = ["ram_access_1x16"]

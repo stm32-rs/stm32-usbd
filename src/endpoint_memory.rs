@@ -1,16 +1,23 @@
-use crate::target::{UsbAccessType, EP_MEM_ADDR, EP_MEM_SIZE, NUM_ENDPOINTS};
+use crate::endpoint::NUM_ENDPOINTS;
+use crate::UsbPeripheral;
+use core::marker::PhantomData;
 use core::{mem, slice};
 use usb_device::{Result, UsbError};
 use vcell::VolatileCell;
 
-const EP_MEM_PTR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
+#[cfg(feature = "ram_access_1x16")]
+pub type UsbAccessType = u32;
+#[cfg(feature = "ram_access_2x16")]
+pub type UsbAccessType = u16;
 
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
 impl EndpointBuffer {
-    pub fn new(offset_bytes: usize, size_bytes: usize) -> Self {
+    pub fn new<USB: UsbPeripheral>(offset_bytes: usize, size_bytes: usize) -> Self {
+        let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<UsbAccessType>;
+
         let mem =
-            unsafe { slice::from_raw_parts_mut(EP_MEM_PTR.offset((offset_bytes >> 1) as isize), size_bytes >> 1) };
+            unsafe { slice::from_raw_parts_mut(ep_mem_ptr.offset((offset_bytes >> 1) as isize), size_bytes >> 1) };
         Self(mem)
     }
 
@@ -59,9 +66,9 @@ impl EndpointBuffer {
         }
     }
 
-    pub fn offset(&self) -> usize {
+    pub fn offset<USB: UsbPeripheral>(&self) -> usize {
         let buffer_address = self.0.as_ptr() as usize;
-        let index = (buffer_address - EP_MEM_ADDR) / mem::size_of::<UsbAccessType>();
+        let index = (buffer_address - USB::EP_MEMORY as usize) / mem::size_of::<UsbAccessType>();
         index << 1
     }
 
@@ -78,32 +85,34 @@ pub struct BufferDescriptor {
     pub count_rx: VolatileCell<UsbAccessType>,
 }
 
-pub struct EndpointMemoryAllocator {
+pub struct EndpointMemoryAllocator<USB> {
     next_free_offset: usize,
+    _marker: PhantomData<USB>,
 }
 
-impl EndpointMemoryAllocator {
+impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
     pub fn new() -> Self {
         Self {
             next_free_offset: NUM_ENDPOINTS * 8,
+            _marker: PhantomData,
         }
     }
 
     pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
-        assert!(size & 1 == 0);
-        assert!(size < EP_MEM_SIZE);
+        assert_eq!(size & 1, 0);
+        assert!(size < USB::EP_MEMORY_SIZE);
 
         let offset = self.next_free_offset;
-        if offset as usize + size > EP_MEM_SIZE {
+        if offset as usize + size > USB::EP_MEMORY_SIZE {
             return Err(UsbError::EndpointMemoryOverflow);
         }
 
         self.next_free_offset += size;
 
-        Ok(EndpointBuffer::new(offset, size))
+        Ok(EndpointBuffer::new::<USB>(offset, size))
     }
 
     pub fn buffer_descriptor(index: u8) -> &'static BufferDescriptor {
-        unsafe { &*(EP_MEM_ADDR as *const BufferDescriptor).offset(index as isize) }
+        unsafe { &*(USB::EP_MEMORY as *const BufferDescriptor).offset(index as isize) }
     }
 }

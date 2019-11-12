@@ -1,17 +1,27 @@
-use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator};
-use crate::target::{usb, UsbAccessType, UsbRegisters};
+use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator, UsbAccessType};
+use crate::registers::UsbRegisters;
+use crate::UsbPeripheral;
+use core::marker::PhantomData;
 use core::mem;
 use cortex_m::interrupt::{self, CriticalSection, Mutex};
 use usb_device::endpoint::EndpointType;
 use usb_device::{Result, UsbError};
 
+// Use bundled register definitions instead of device-specific ones
+// This should work because register definitions from newer chips seem to be
+// compatible with definitions for older ones.
+pub use crate::pac::usb;
+
+pub const NUM_ENDPOINTS: usize = 8;
+
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]
-pub struct Endpoint {
+pub struct Endpoint<USB> {
     out_buf: Option<Mutex<EndpointBuffer>>,
     in_buf: Option<Mutex<EndpointBuffer>>,
     ep_type: Option<EndpointType>,
     index: u8,
+    _marker: PhantomData<USB>,
 }
 
 pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
@@ -34,13 +44,14 @@ pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
     }
 }
 
-impl Endpoint {
-    pub fn new(index: u8) -> Endpoint {
-        Endpoint {
+impl<USB: UsbPeripheral> Endpoint<USB> {
+    pub fn new(index: u8) -> Self {
+        Self {
             out_buf: None,
             in_buf: None,
             ep_type: None,
             index,
+            _marker: PhantomData,
         }
     }
 
@@ -57,7 +68,7 @@ impl Endpoint {
     }
 
     pub fn set_out_buf(&mut self, buffer: EndpointBuffer, size_bits: u16) {
-        let offset = buffer.offset();
+        let offset = buffer.offset::<USB>();
         self.out_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
@@ -70,7 +81,7 @@ impl Endpoint {
     }
 
     pub fn set_in_buf(&mut self, buffer: EndpointBuffer) {
-        let offset = buffer.offset();
+        let offset = buffer.offset::<USB>();
         self.in_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
@@ -79,11 +90,11 @@ impl Endpoint {
     }
 
     fn descr(&self) -> &'static BufferDescriptor {
-        EndpointMemoryAllocator::buffer_descriptor(self.index)
+        EndpointMemoryAllocator::<USB>::buffer_descriptor(self.index)
     }
 
     fn reg(&self) -> &'static usb::EPR {
-        UsbRegisters::ep_register(self.index)
+        UsbRegisters::<USB>::ep_register(self.index)
     }
 
     #[rustfmt::skip]

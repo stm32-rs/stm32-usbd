@@ -1,48 +1,52 @@
 //! USB peripheral driver.
 
-use core::marker::PhantomData;
-use core::mem;
-use cortex_m::asm::delay;
+use core::mem::{self, MaybeUninit};
 use cortex_m::interrupt::{self, Mutex};
 use usb_device::bus::{PollResult, UsbBusAllocator};
 use usb_device::endpoint::{EndpointAddress, EndpointType};
 use usb_device::{Result, UsbDirection, UsbError};
 
-use crate::endpoint::{calculate_count_rx, Endpoint, EndpointStatus};
+use crate::endpoint::{calculate_count_rx, Endpoint, EndpointStatus, NUM_ENDPOINTS};
 use crate::endpoint_memory::EndpointMemoryAllocator;
-use crate::target::{apb_usb_enable, UsbPins, UsbRegisters, NUM_ENDPOINTS, USB};
+use crate::registers::UsbRegisters;
+use crate::UsbPeripheral;
 
 /// USB peripheral driver for STM32 microcontrollers.
-pub struct UsbBus<PINS> {
-    regs: Mutex<UsbRegisters>,
-    endpoints: [Endpoint; NUM_ENDPOINTS],
-    ep_allocator: EndpointMemoryAllocator,
+pub struct UsbBus<USB> {
+    peripheral: USB,
+    regs: Mutex<UsbRegisters<USB>>,
+    endpoints: [Endpoint<USB>; NUM_ENDPOINTS],
+    ep_allocator: EndpointMemoryAllocator<USB>,
     max_endpoint: usize,
-    pins: PhantomData<PINS>,
 }
 
-impl<PINS: UsbPins + Sync> UsbBus<PINS> {
+impl<USB: UsbPeripheral> UsbBus<USB> {
     /// Constructs a new USB peripheral driver.
-    pub fn new(regs: USB, _pins: PINS) -> UsbBusAllocator<Self> {
-        apb_usb_enable();
+    pub fn new(peripheral: USB) -> UsbBusAllocator<Self> {
+        USB::enable();
 
         let bus = UsbBus {
-            regs: Mutex::new(UsbRegisters::new(regs)),
+            peripheral,
+            regs: Mutex::new(UsbRegisters::new()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
-            endpoints: unsafe {
-                let mut endpoints: [Endpoint; NUM_ENDPOINTS] = mem::uninitialized();
+            endpoints: {
+                let mut endpoints: [MaybeUninit<Endpoint<USB>>; NUM_ENDPOINTS] =
+                    unsafe { MaybeUninit::uninit().assume_init() };
 
                 for i in 0..NUM_ENDPOINTS {
-                    endpoints[i] = Endpoint::new(i as u8);
+                    endpoints[i] = MaybeUninit::new(Endpoint::new(i as u8));
                 }
 
-                endpoints
+                unsafe { mem::transmute::<_, [Endpoint<USB>; NUM_ENDPOINTS]>(endpoints) }
             },
-            pins: PhantomData,
         };
 
         UsbBusAllocator::new(bus)
+    }
+
+    pub fn free(self) -> USB {
+        self.peripheral
     }
 
     /// Simulates a disconnect from the USB bus, causing the host to reset and re-enumerate the
@@ -69,7 +73,7 @@ impl<PINS: UsbPins + Sync> UsbBus<PINS> {
     }
 }
 
-impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
+impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
     fn alloc_ep(
         &mut self,
         ep_dir: UsbDirection,
@@ -136,9 +140,7 @@ impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
             regs.cntr.modify(|_, w| w.pdwn().clear_bit());
 
-            // There is a chip specific startup delay. For STM32F103xx it's 1µs and this should wait for
-            // at least that long.
-            delay(72);
+            USB::startup_delay();
 
             regs.btable.modify(|_, w| w.btable().bits(0));
             regs.cntr.modify(|_, w| { w
@@ -150,8 +152,9 @@ impl<PINS: Send + Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             });
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
 
-            #[cfg(feature = "dp_pull_up_support")]
-            regs.bcdr.modify(|_, w| w.dppu().set_bit());
+            if USB::DP_PULL_UP_FEATURE {
+                regs.bcdr.modify(|_, w| w.dppu().set_bit());
+            }
         });
     }
 
