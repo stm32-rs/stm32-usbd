@@ -2,7 +2,7 @@ use crate::pac::usb::{RegisterBlock, EPR};
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
 
-/// Wrapper around device-specific peripheral that provides unified register interface
+/// A proxy type that provides unified register interface
 pub struct UsbRegisters<USB> {
     _marker: PhantomData<USB>,
 }
