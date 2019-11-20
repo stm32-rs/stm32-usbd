@@ -6,5 +6,8 @@ rust:
 
 cache: cargo
 
+install:
+  - rustup component add rustfmt
+
 script:
   - ci/script.sh
