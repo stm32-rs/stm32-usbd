@@ -124,7 +124,6 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
         })
     }
 
-    #[rustfmt::skip]
     fn enable(&mut self) {
         let mut max = 0;
         for (index, ep) in self.endpoints.iter().enumerate() {
@@ -143,12 +142,12 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
             USB::startup_delay();
 
             regs.btable.modify(|_, w| w.btable().bits(0));
-            regs.cntr.modify(|_, w| { w
-                .fres().clear_bit()
-                .resetm().set_bit()
-                .suspm().set_bit()
-                .wkupm().set_bit()
-                .ctrm().set_bit()
+            regs.cntr.modify(|_, w| {
+                w.fres().clear_bit();
+                w.resetm().set_bit();
+                w.suspm().set_bit();
+                w.wkupm().set_bit();
+                w.ctrm().set_bit()
             });
             regs.istr.modify(|_, w| unsafe { w.bits(0) });
 

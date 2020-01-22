@@ -97,7 +97,6 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         UsbRegisters::<USB>::ep_register(self.index)
     }
 
-    #[rustfmt::skip]
     pub fn configure(&self, cs: &CriticalSection) {
         let ep_type = match self.ep_type {
             Some(t) => t,
@@ -105,16 +104,16 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         };
 
         self.reg().modify(|_, w| {
-            Self::set_invariant_values(w)
-                .ctr_rx().clear_bit()
-                // dtog_rx
-                // stat_rx
-                .ep_type().bits(ep_type.bits())
-                .ep_kind().clear_bit()
-                .ctr_tx().clear_bit()
-                // dtog_rx
-                // stat_tx
-                .ea().bits(self.index)
+            Self::set_invariant_values(w);
+            w.ctr_rx().clear_bit();
+            // dtog_rx
+            // stat_rx
+            w.ep_type().bits(ep_type.bits());
+            w.ep_kind().clear_bit();
+            w.ctr_tx().clear_bit();
+            // dtog_rx
+            // stat_tx
+            w.ea().bits(self.index)
         });
 
         self.set_stat_rx(
@@ -195,15 +194,13 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
     /// conditions, there are invariant values for the fields that may be modified by the hardware
     /// that can be written to avoid modifying other fields while modifying a single field. This
     /// method sets all the volatile fields to their invariant values.
-    #[rustfmt::skip]
     fn set_invariant_values(w: &mut usb::epr::W) -> &mut usb::epr::W {
-        w
-            .ctr_rx().set_bit()
-            .dtog_rx().clear_bit()
-            .stat_rx().bits(0)
-            .ctr_tx().set_bit()
-            .dtog_tx().clear_bit()
-            .stat_tx().bits(0)
+        w.ctr_rx().set_bit();
+        w.dtog_rx().clear_bit();
+        w.stat_rx().bits(0);
+        w.ctr_tx().set_bit();
+        w.dtog_tx().clear_bit();
+        w.stat_tx().bits(0)
     }
 
     pub fn clear_ctr_rx(&self, _cs: &CriticalSection) {
