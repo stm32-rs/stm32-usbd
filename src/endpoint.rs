@@ -111,7 +111,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
             w.ep_type().bits(ep_type.bits());
             w.ep_kind().clear_bit();
             w.ctr_tx().clear_bit();
-            // dtog_rx
+            // dtog_tx
             // stat_tx
             w.ea().bits(self.index)
         });
