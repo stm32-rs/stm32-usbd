@@ -10,13 +10,17 @@ compile_error!("This crate requires one of the ram_access features enabled");
 #[cfg(all(feature = "ram_access_1x16", feature = "ram_access_2x16"))]
 compile_error!("Multiple ram_access features are specified. Only a single feature can be specified.");
 
-pub mod bus;
+pub mod usbcore;
+
+pub use crate::usbcore::UsbCore;
+
+/// Temporary compatibility shim
+pub use usbcore::UsbCore as UsbBus;
+
 mod endpoint;
 mod endpoint_memory;
-mod registers;
-pub use crate::bus::UsbBus;
-
 mod pac;
+mod registers;
 
 /// A trait for device-specific USB peripherals. Implement this to add support for a new hardware
 /// platform. Peripherals that have this trait must have the same register block as STM32 USBFS

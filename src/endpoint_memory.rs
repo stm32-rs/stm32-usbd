@@ -1,7 +1,7 @@
 use crate::endpoint::NUM_ENDPOINTS;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
-use core::{mem, slice};
+use core::slice;
 use usb_device::{Result, UsbError};
 use vcell::VolatileCell;
 
@@ -66,11 +66,11 @@ impl EndpointBuffer {
         }
     }
 
-    pub fn offset<USB: UsbPeripheral>(&self) -> usize {
+    /*pub fn offset<USB: UsbPeripheral>(&self) -> usize {
         let buffer_address = self.0.as_ptr() as usize;
         let index = (buffer_address - USB::EP_MEMORY as usize) / mem::size_of::<UsbAccessType>();
         index << 1
-    }
+    }*/
 
     pub fn capacity(&self) -> usize {
         self.0.len() << 1
@@ -85,6 +85,12 @@ pub struct BufferDescriptor {
     pub count_rx: VolatileCell<UsbAccessType>,
 }
 
+/*impl BufferDescriptor {
+    fn get<USB: UsbPeripheral>(index: u8) -> &'static BufferDescriptor{
+        unsafe { &*(USB::EP_MEMORY as *const BufferDescriptor).offset(index as isize) }
+    }
+}*/
+
 pub struct EndpointMemoryAllocator<USB> {
     next_free_offset: usize,
     _marker: PhantomData<USB>,
@@ -98,7 +104,7 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
         }
     }
 
-    pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
+    pub fn allocate_buffer(&mut self, size: usize) -> Result<usize> {
         assert_eq!(size & 1, 0);
         assert!(size < USB::EP_MEMORY_SIZE);
 
@@ -109,7 +115,7 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
 
         self.next_free_offset += size;
 
-        Ok(EndpointBuffer::new::<USB>(offset, size))
+        Ok(offset)
     }
 
     pub fn buffer_descriptor(index: u8) -> &'static BufferDescriptor {
