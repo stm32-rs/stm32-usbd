@@ -1,888 +1,605 @@
-#[doc = r" Value read from the register"]
-pub struct R {
-    bits: u32,
-}
-#[doc = r" Value to write to the register"]
-pub struct W {
-    bits: u32,
-}
-impl super::BCDR {
-    #[doc = r" Modifies the contents of the register"]
-    #[inline]
-    pub fn modify<F>(&self, f: F)
-    where
-        for<'w> F: FnOnce(&R, &'w mut W) -> &'w mut W,
-    {
-        let bits = self.register.get();
-        let r = R { bits: bits };
-        let mut w = W { bits: bits };
-        f(&r, &mut w);
-        self.register.set(w.bits);
+#[doc = "Reader of register BCDR"]
+pub type R = crate::pac::generic::R<u32, super::BCDR>;
+#[doc = "Writer for register BCDR"]
+pub type W = crate::pac::generic::W<u32, super::BCDR>;
+#[doc = "Register BCDR `reset()`'s with value 0"]
+impl crate::pac::generic::ResetValue for super::BCDR {
+    type Type = u32;
+    #[inline(always)]
+    fn reset_value() -> Self::Type {
+        0
     }
-    #[doc = r" Reads the contents of the register"]
-    #[inline]
-    pub fn read(&self) -> R {
-        R {
-            bits: self.register.get(),
+}
+#[doc = "Battery charging detector\n\nValue on reset: 0"]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum BCDEN_A {
+    #[doc = "0: disable the BCD support"]
+    DISABLED = 0,
+    #[doc = "1: enable the BCD support within the USB device"]
+    ENABLED = 1,
+}
+impl From<BCDEN_A> for bool {
+    #[inline(always)]
+    fn from(variant: BCDEN_A) -> Self {
+        variant as u8 != 0
+    }
+}
+#[doc = "Reader of field `BCDEN`"]
+pub type BCDEN_R = crate::pac::generic::R<bool, BCDEN_A>;
+impl BCDEN_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> BCDEN_A {
+        match self.bits {
+            false => BCDEN_A::DISABLED,
+            true => BCDEN_A::ENABLED,
         }
     }
-    #[doc = r" Writes to the register"]
-    #[inline]
-    pub fn write<F>(&self, f: F)
-    where
-        F: FnOnce(&mut W) -> &mut W,
-    {
-        let mut w = W::reset_value();
-        f(&mut w);
-        self.register.set(w.bits);
+    #[doc = "Checks if the value of the field is `DISABLED`"]
+    #[inline(always)]
+    pub fn is_disabled(&self) -> bool {
+        *self == BCDEN_A::DISABLED
     }
-    #[doc = r" Writes the reset value to the register"]
-    #[inline]
-    pub fn reset(&self) {
-        self.write(|w| w)
+    #[doc = "Checks if the value of the field is `ENABLED`"]
+    #[inline(always)]
+    pub fn is_enabled(&self) -> bool {
+        *self == BCDEN_A::ENABLED
     }
 }
-#[doc = "Possible values of the field `BCDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum BCDENR {
+#[doc = "Write proxy for field `BCDEN`"]
+pub struct BCDEN_W<'a> {
+    w: &'a mut W,
+}
+impl<'a> BCDEN_W<'a> {
+    #[doc = r"Writes `variant` to the field"]
+    #[inline(always)]
+    pub fn variant(self, variant: BCDEN_A) -> &'a mut W {
+        {
+            self.bit(variant.into())
+        }
+    }
     #[doc = "disable the BCD support"]
-    DISABLED,
+    #[inline(always)]
+    pub fn disabled(self) -> &'a mut W {
+        self.variant(BCDEN_A::DISABLED)
+    }
     #[doc = "enable the BCD support within the USB device"]
-    ENABLED,
+    #[inline(always)]
+    pub fn enabled(self) -> &'a mut W {
+        self.variant(BCDEN_A::ENABLED)
+    }
+    #[doc = r"Sets the field bit"]
+    #[inline(always)]
+    pub fn set_bit(self) -> &'a mut W {
+        self.bit(true)
+    }
+    #[doc = r"Clears the field bit"]
+    #[inline(always)]
+    pub fn clear_bit(self) -> &'a mut W {
+        self.bit(false)
+    }
+    #[doc = r"Writes raw bits to the field"]
+    #[inline(always)]
+    pub fn bit(self, value: bool) -> &'a mut W {
+        self.w.bits = (self.w.bits & !0x01) | ((value as u32) & 0x01);
+        self.w
+    }
 }
-impl BCDENR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+#[doc = "Data contact detection\n\nValue on reset: 0"]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DCDEN_A {
+    #[doc = "0: Data contact detection (DCD) mode disabled"]
+    DISABLED = 0,
+    #[doc = "1: Data contact detection (DCD) mode enabled"]
+    ENABLED = 1,
+}
+impl From<DCDEN_A> for bool {
+    #[inline(always)]
+    fn from(variant: DCDEN_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            BCDENR::DISABLED => false,
-            BCDENR::ENABLED => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> BCDENR {
-        match value {
-            false => BCDENR::DISABLED,
-            true => BCDENR::ENABLED,
+}
+#[doc = "Reader of field `DCDEN`"]
+pub type DCDEN_R = crate::pac::generic::R<bool, DCDEN_A>;
+impl DCDEN_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> DCDEN_A {
+        match self.bits {
+            false => DCDEN_A::DISABLED,
+            true => DCDEN_A::ENABLED,
         }
     }
     #[doc = "Checks if the value of the field is `DISABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_disabled(&self) -> bool {
-        *self == BCDENR::DISABLED
+        *self == DCDEN_A::DISABLED
     }
     #[doc = "Checks if the value of the field is `ENABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_enabled(&self) -> bool {
-        *self == BCDENR::ENABLED
+        *self == DCDEN_A::ENABLED
     }
 }
-#[doc = "Possible values of the field `DCDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DCDENR {
+#[doc = "Write proxy for field `DCDEN`"]
+pub struct DCDEN_W<'a> {
+    w: &'a mut W,
+}
+impl<'a> DCDEN_W<'a> {
+    #[doc = r"Writes `variant` to the field"]
+    #[inline(always)]
+    pub fn variant(self, variant: DCDEN_A) -> &'a mut W {
+        {
+            self.bit(variant.into())
+        }
+    }
     #[doc = "Data contact detection (DCD) mode disabled"]
-    DISABLED,
+    #[inline(always)]
+    pub fn disabled(self) -> &'a mut W {
+        self.variant(DCDEN_A::DISABLED)
+    }
     #[doc = "Data contact detection (DCD) mode enabled"]
-    ENABLED,
+    #[inline(always)]
+    pub fn enabled(self) -> &'a mut W {
+        self.variant(DCDEN_A::ENABLED)
+    }
+    #[doc = r"Sets the field bit"]
+    #[inline(always)]
+    pub fn set_bit(self) -> &'a mut W {
+        self.bit(true)
+    }
+    #[doc = r"Clears the field bit"]
+    #[inline(always)]
+    pub fn clear_bit(self) -> &'a mut W {
+        self.bit(false)
+    }
+    #[doc = r"Writes raw bits to the field"]
+    #[inline(always)]
+    pub fn bit(self, value: bool) -> &'a mut W {
+        self.w.bits = (self.w.bits & !(0x01 << 1)) | (((value as u32) & 0x01) << 1);
+        self.w
+    }
 }
-impl DCDENR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+#[doc = "Primary detection\n\nValue on reset: 0"]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PDEN_A {
+    #[doc = "0: Primary detection (PD) mode disabled"]
+    DISABLED = 0,
+    #[doc = "1: Primary detection (PD) mode enabled"]
+    ENABLED = 1,
+}
+impl From<PDEN_A> for bool {
+    #[inline(always)]
+    fn from(variant: PDEN_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            DCDENR::DISABLED => false,
-            DCDENR::ENABLED => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> DCDENR {
-        match value {
-            false => DCDENR::DISABLED,
-            true => DCDENR::ENABLED,
+}
+#[doc = "Reader of field `PDEN`"]
+pub type PDEN_R = crate::pac::generic::R<bool, PDEN_A>;
+impl PDEN_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> PDEN_A {
+        match self.bits {
+            false => PDEN_A::DISABLED,
+            true => PDEN_A::ENABLED,
         }
     }
     #[doc = "Checks if the value of the field is `DISABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_disabled(&self) -> bool {
-        *self == DCDENR::DISABLED
+        *self == PDEN_A::DISABLED
     }
     #[doc = "Checks if the value of the field is `ENABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_enabled(&self) -> bool {
-        *self == DCDENR::ENABLED
+        *self == PDEN_A::ENABLED
     }
 }
-#[doc = "Possible values of the field `PDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PDENR {
+#[doc = "Write proxy for field `PDEN`"]
+pub struct PDEN_W<'a> {
+    w: &'a mut W,
+}
+impl<'a> PDEN_W<'a> {
+    #[doc = r"Writes `variant` to the field"]
+    #[inline(always)]
+    pub fn variant(self, variant: PDEN_A) -> &'a mut W {
+        {
+            self.bit(variant.into())
+        }
+    }
     #[doc = "Primary detection (PD) mode disabled"]
-    DISABLED,
+    #[inline(always)]
+    pub fn disabled(self) -> &'a mut W {
+        self.variant(PDEN_A::DISABLED)
+    }
     #[doc = "Primary detection (PD) mode enabled"]
-    ENABLED,
+    #[inline(always)]
+    pub fn enabled(self) -> &'a mut W {
+        self.variant(PDEN_A::ENABLED)
+    }
+    #[doc = r"Sets the field bit"]
+    #[inline(always)]
+    pub fn set_bit(self) -> &'a mut W {
+        self.bit(true)
+    }
+    #[doc = r"Clears the field bit"]
+    #[inline(always)]
+    pub fn clear_bit(self) -> &'a mut W {
+        self.bit(false)
+    }
+    #[doc = r"Writes raw bits to the field"]
+    #[inline(always)]
+    pub fn bit(self, value: bool) -> &'a mut W {
+        self.w.bits = (self.w.bits & !(0x01 << 2)) | (((value as u32) & 0x01) << 2);
+        self.w
+    }
 }
-impl PDENR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+#[doc = "Secondary detection\n\nValue on reset: 0"]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum SDEN_A {
+    #[doc = "0: Secondary detection (SD) mode disabled"]
+    DISABLED = 0,
+    #[doc = "1: Secondary detection (SD) mode enabled"]
+    ENABLED = 1,
+}
+impl From<SDEN_A> for bool {
+    #[inline(always)]
+    fn from(variant: SDEN_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            PDENR::DISABLED => false,
-            PDENR::ENABLED => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> PDENR {
-        match value {
-            false => PDENR::DISABLED,
-            true => PDENR::ENABLED,
+}
+#[doc = "Reader of field `SDEN`"]
+pub type SDEN_R = crate::pac::generic::R<bool, SDEN_A>;
+impl SDEN_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> SDEN_A {
+        match self.bits {
+            false => SDEN_A::DISABLED,
+            true => SDEN_A::ENABLED,
         }
     }
     #[doc = "Checks if the value of the field is `DISABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_disabled(&self) -> bool {
-        *self == PDENR::DISABLED
+        *self == SDEN_A::DISABLED
     }
     #[doc = "Checks if the value of the field is `ENABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_enabled(&self) -> bool {
-        *self == PDENR::ENABLED
+        *self == SDEN_A::ENABLED
     }
 }
-#[doc = "Possible values of the field `SDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SDENR {
+#[doc = "Write proxy for field `SDEN`"]
+pub struct SDEN_W<'a> {
+    w: &'a mut W,
+}
+impl<'a> SDEN_W<'a> {
+    #[doc = r"Writes `variant` to the field"]
+    #[inline(always)]
+    pub fn variant(self, variant: SDEN_A) -> &'a mut W {
+        {
+            self.bit(variant.into())
+        }
+    }
     #[doc = "Secondary detection (SD) mode disabled"]
-    DISABLED,
+    #[inline(always)]
+    pub fn disabled(self) -> &'a mut W {
+        self.variant(SDEN_A::DISABLED)
+    }
     #[doc = "Secondary detection (SD) mode enabled"]
-    ENABLED,
-}
-impl SDENR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+    #[inline(always)]
+    pub fn enabled(self) -> &'a mut W {
+        self.variant(SDEN_A::ENABLED)
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
+    #[doc = r"Sets the field bit"]
+    #[inline(always)]
+    pub fn set_bit(self) -> &'a mut W {
+        self.bit(true)
     }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            SDENR::DISABLED => false,
-            SDENR::ENABLED => true,
-        }
+    #[doc = r"Clears the field bit"]
+    #[inline(always)]
+    pub fn clear_bit(self) -> &'a mut W {
+        self.bit(false)
     }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> SDENR {
-        match value {
-            false => SDENR::DISABLED,
-            true => SDENR::ENABLED,
-        }
-    }
-    #[doc = "Checks if the value of the field is `DISABLED`"]
-    #[inline]
-    pub fn is_disabled(&self) -> bool {
-        *self == SDENR::DISABLED
-    }
-    #[doc = "Checks if the value of the field is `ENABLED`"]
-    #[inline]
-    pub fn is_enabled(&self) -> bool {
-        *self == SDENR::ENABLED
+    #[doc = r"Writes raw bits to the field"]
+    #[inline(always)]
+    pub fn bit(self, value: bool) -> &'a mut W {
+        self.w.bits = (self.w.bits & !(0x01 << 3)) | (((value as u32) & 0x01) << 3);
+        self.w
     }
 }
-#[doc = "Possible values of the field `DCDET`"]
+#[doc = "Data contact detection\n\nValue on reset: 0"]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DCDETR {
-    #[doc = "data lines contact not detected"]
-    NOTDETECTED,
-    #[doc = "data lines contact detected"]
-    DETECTED,
+pub enum DCDET_A {
+    #[doc = "0: data lines contact not detected"]
+    NOTDETECTED = 0,
+    #[doc = "1: data lines contact detected"]
+    DETECTED = 1,
 }
-impl DCDETR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+impl From<DCDET_A> for bool {
+    #[inline(always)]
+    fn from(variant: DCDET_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            DCDETR::NOTDETECTED => false,
-            DCDETR::DETECTED => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> DCDETR {
-        match value {
-            false => DCDETR::NOTDETECTED,
-            true => DCDETR::DETECTED,
+}
+#[doc = "Reader of field `DCDET`"]
+pub type DCDET_R = crate::pac::generic::R<bool, DCDET_A>;
+impl DCDET_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> DCDET_A {
+        match self.bits {
+            false => DCDET_A::NOTDETECTED,
+            true => DCDET_A::DETECTED,
         }
     }
     #[doc = "Checks if the value of the field is `NOTDETECTED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_not_detected(&self) -> bool {
-        *self == DCDETR::NOTDETECTED
+        *self == DCDET_A::NOTDETECTED
     }
     #[doc = "Checks if the value of the field is `DETECTED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_detected(&self) -> bool {
-        *self == DCDETR::DETECTED
+        *self == DCDET_A::DETECTED
     }
 }
-#[doc = "Possible values of the field `PDET`"]
+#[doc = "Primary detection\n\nValue on reset: 0"]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PDETR {
-    #[doc = "no BCD support detected"]
-    NOBCD,
-    #[doc = "BCD support detected"]
-    BCD,
+pub enum PDET_A {
+    #[doc = "0: no BCD support detected"]
+    NOBCD = 0,
+    #[doc = "1: BCD support detected"]
+    BCD = 1,
 }
-impl PDETR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+impl From<PDET_A> for bool {
+    #[inline(always)]
+    fn from(variant: PDET_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            PDETR::NOBCD => false,
-            PDETR::BCD => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> PDETR {
-        match value {
-            false => PDETR::NOBCD,
-            true => PDETR::BCD,
+}
+#[doc = "Reader of field `PDET`"]
+pub type PDET_R = crate::pac::generic::R<bool, PDET_A>;
+impl PDET_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> PDET_A {
+        match self.bits {
+            false => PDET_A::NOBCD,
+            true => PDET_A::BCD,
         }
     }
     #[doc = "Checks if the value of the field is `NOBCD`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_no_bcd(&self) -> bool {
-        *self == PDETR::NOBCD
+        *self == PDET_A::NOBCD
     }
     #[doc = "Checks if the value of the field is `BCD`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_bcd(&self) -> bool {
-        *self == PDETR::BCD
+        *self == PDET_A::BCD
     }
 }
-#[doc = "Possible values of the field `SDET`"]
+#[doc = "Secondary detection\n\nValue on reset: 0"]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SDETR {
-    #[doc = "CDP detected"]
-    CDP,
-    #[doc = "DCP detected"]
-    DCP,
+pub enum SDET_A {
+    #[doc = "0: CDP detected"]
+    CDP = 0,
+    #[doc = "1: DCP detected"]
+    DCP = 1,
 }
-impl SDETR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+impl From<SDET_A> for bool {
+    #[inline(always)]
+    fn from(variant: SDET_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            SDETR::CDP => false,
-            SDETR::DCP => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> SDETR {
-        match value {
-            false => SDETR::CDP,
-            true => SDETR::DCP,
+}
+#[doc = "Reader of field `SDET`"]
+pub type SDET_R = crate::pac::generic::R<bool, SDET_A>;
+impl SDET_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> SDET_A {
+        match self.bits {
+            false => SDET_A::CDP,
+            true => SDET_A::DCP,
         }
     }
     #[doc = "Checks if the value of the field is `CDP`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_cdp(&self) -> bool {
-        *self == SDETR::CDP
+        *self == SDET_A::CDP
     }
     #[doc = "Checks if the value of the field is `DCP`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_dcp(&self) -> bool {
-        *self == SDETR::DCP
+        *self == SDET_A::DCP
     }
 }
-#[doc = "Possible values of the field `PS2DET`"]
+#[doc = "DM pull-up detection status\n\nValue on reset: 0"]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PS2DETR {
-    #[doc = "Normal port detected"]
-    NORMAL,
-    #[doc = "PS2 port or proprietary charger detected"]
-    PS2,
+pub enum PS2DET_A {
+    #[doc = "0: Normal port detected"]
+    NORMAL = 0,
+    #[doc = "1: PS2 port or proprietary charger detected"]
+    PS2 = 1,
 }
-impl PS2DETR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+impl From<PS2DET_A> for bool {
+    #[inline(always)]
+    fn from(variant: PS2DET_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            PS2DETR::NORMAL => false,
-            PS2DETR::PS2 => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> PS2DETR {
-        match value {
-            false => PS2DETR::NORMAL,
-            true => PS2DETR::PS2,
+}
+#[doc = "Reader of field `PS2DET`"]
+pub type PS2DET_R = crate::pac::generic::R<bool, PS2DET_A>;
+impl PS2DET_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> PS2DET_A {
+        match self.bits {
+            false => PS2DET_A::NORMAL,
+            true => PS2DET_A::PS2,
         }
     }
     #[doc = "Checks if the value of the field is `NORMAL`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_normal(&self) -> bool {
-        *self == PS2DETR::NORMAL
+        *self == PS2DET_A::NORMAL
     }
     #[doc = "Checks if the value of the field is `PS2`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_ps2(&self) -> bool {
-        *self == PS2DETR::PS2
+        *self == PS2DET_A::PS2
     }
 }
-#[doc = "Possible values of the field `DPPU`"]
+#[doc = "DP pull-up control\n\nValue on reset: 0"]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DPPUR {
-    #[doc = "signalize disconnect to the host when needed by the user software"]
-    DISABLED,
-    #[doc = "enable the embedded pull-up on the DP line"]
-    ENABLED,
+pub enum DPPU_A {
+    #[doc = "0: signalize disconnect to the host when needed by the user software"]
+    DISABLED = 0,
+    #[doc = "1: enable the embedded pull-up on the DP line"]
+    ENABLED = 1,
 }
-impl DPPUR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+impl From<DPPU_A> for bool {
+    #[inline(always)]
+    fn from(variant: DPPU_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            DPPUR::DISABLED => false,
-            DPPUR::ENABLED => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> DPPUR {
-        match value {
-            false => DPPUR::DISABLED,
-            true => DPPUR::ENABLED,
+}
+#[doc = "Reader of field `DPPU`"]
+pub type DPPU_R = crate::pac::generic::R<bool, DPPU_A>;
+impl DPPU_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> DPPU_A {
+        match self.bits {
+            false => DPPU_A::DISABLED,
+            true => DPPU_A::ENABLED,
         }
     }
     #[doc = "Checks if the value of the field is `DISABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_disabled(&self) -> bool {
-        *self == DPPUR::DISABLED
+        *self == DPPU_A::DISABLED
     }
     #[doc = "Checks if the value of the field is `ENABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_enabled(&self) -> bool {
-        *self == DPPUR::ENABLED
+        *self == DPPU_A::ENABLED
     }
 }
-#[doc = "Values that can be written to the field `BCDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum BCDENW {
-    #[doc = "disable the BCD support"]
-    DISABLED,
-    #[doc = "enable the BCD support within the USB device"]
-    ENABLED,
-}
-impl BCDENW {
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _bits(&self) -> bool {
-        match *self {
-            BCDENW::DISABLED => false,
-            BCDENW::ENABLED => true,
-        }
-    }
-}
-#[doc = r" Proxy"]
-pub struct _BCDENW<'a> {
+#[doc = "Write proxy for field `DPPU`"]
+pub struct DPPU_W<'a> {
     w: &'a mut W,
 }
-impl<'a> _BCDENW<'a> {
-    #[doc = r" Writes `variant` to the field"]
-    #[inline]
-    pub fn variant(self, variant: BCDENW) -> &'a mut W {
+impl<'a> DPPU_W<'a> {
+    #[doc = r"Writes `variant` to the field"]
+    #[inline(always)]
+    pub fn variant(self, variant: DPPU_A) -> &'a mut W {
         {
-            self.bit(variant._bits())
-        }
-    }
-    #[doc = "disable the BCD support"]
-    #[inline]
-    pub fn disabled(self) -> &'a mut W {
-        self.variant(BCDENW::DISABLED)
-    }
-    #[doc = "enable the BCD support within the USB device"]
-    #[inline]
-    pub fn enabled(self) -> &'a mut W {
-        self.variant(BCDENW::ENABLED)
-    }
-    #[doc = r" Sets the field bit"]
-    pub fn set_bit(self) -> &'a mut W {
-        self.bit(true)
-    }
-    #[doc = r" Clears the field bit"]
-    pub fn clear_bit(self) -> &'a mut W {
-        self.bit(false)
-    }
-    #[doc = r" Writes raw bits to the field"]
-    #[inline]
-    pub fn bit(self, value: bool) -> &'a mut W {
-        const MASK: bool = true;
-        const OFFSET: u8 = 0;
-        self.w.bits &= !((MASK as u32) << OFFSET);
-        self.w.bits |= ((value & MASK) as u32) << OFFSET;
-        self.w
-    }
-}
-#[doc = "Values that can be written to the field `DCDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DCDENW {
-    #[doc = "Data contact detection (DCD) mode disabled"]
-    DISABLED,
-    #[doc = "Data contact detection (DCD) mode enabled"]
-    ENABLED,
-}
-impl DCDENW {
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _bits(&self) -> bool {
-        match *self {
-            DCDENW::DISABLED => false,
-            DCDENW::ENABLED => true,
-        }
-    }
-}
-#[doc = r" Proxy"]
-pub struct _DCDENW<'a> {
-    w: &'a mut W,
-}
-impl<'a> _DCDENW<'a> {
-    #[doc = r" Writes `variant` to the field"]
-    #[inline]
-    pub fn variant(self, variant: DCDENW) -> &'a mut W {
-        {
-            self.bit(variant._bits())
-        }
-    }
-    #[doc = "Data contact detection (DCD) mode disabled"]
-    #[inline]
-    pub fn disabled(self) -> &'a mut W {
-        self.variant(DCDENW::DISABLED)
-    }
-    #[doc = "Data contact detection (DCD) mode enabled"]
-    #[inline]
-    pub fn enabled(self) -> &'a mut W {
-        self.variant(DCDENW::ENABLED)
-    }
-    #[doc = r" Sets the field bit"]
-    pub fn set_bit(self) -> &'a mut W {
-        self.bit(true)
-    }
-    #[doc = r" Clears the field bit"]
-    pub fn clear_bit(self) -> &'a mut W {
-        self.bit(false)
-    }
-    #[doc = r" Writes raw bits to the field"]
-    #[inline]
-    pub fn bit(self, value: bool) -> &'a mut W {
-        const MASK: bool = true;
-        const OFFSET: u8 = 1;
-        self.w.bits &= !((MASK as u32) << OFFSET);
-        self.w.bits |= ((value & MASK) as u32) << OFFSET;
-        self.w
-    }
-}
-#[doc = "Values that can be written to the field `PDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum PDENW {
-    #[doc = "Primary detection (PD) mode disabled"]
-    DISABLED,
-    #[doc = "Primary detection (PD) mode enabled"]
-    ENABLED,
-}
-impl PDENW {
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _bits(&self) -> bool {
-        match *self {
-            PDENW::DISABLED => false,
-            PDENW::ENABLED => true,
-        }
-    }
-}
-#[doc = r" Proxy"]
-pub struct _PDENW<'a> {
-    w: &'a mut W,
-}
-impl<'a> _PDENW<'a> {
-    #[doc = r" Writes `variant` to the field"]
-    #[inline]
-    pub fn variant(self, variant: PDENW) -> &'a mut W {
-        {
-            self.bit(variant._bits())
-        }
-    }
-    #[doc = "Primary detection (PD) mode disabled"]
-    #[inline]
-    pub fn disabled(self) -> &'a mut W {
-        self.variant(PDENW::DISABLED)
-    }
-    #[doc = "Primary detection (PD) mode enabled"]
-    #[inline]
-    pub fn enabled(self) -> &'a mut W {
-        self.variant(PDENW::ENABLED)
-    }
-    #[doc = r" Sets the field bit"]
-    pub fn set_bit(self) -> &'a mut W {
-        self.bit(true)
-    }
-    #[doc = r" Clears the field bit"]
-    pub fn clear_bit(self) -> &'a mut W {
-        self.bit(false)
-    }
-    #[doc = r" Writes raw bits to the field"]
-    #[inline]
-    pub fn bit(self, value: bool) -> &'a mut W {
-        const MASK: bool = true;
-        const OFFSET: u8 = 2;
-        self.w.bits &= !((MASK as u32) << OFFSET);
-        self.w.bits |= ((value & MASK) as u32) << OFFSET;
-        self.w
-    }
-}
-#[doc = "Values that can be written to the field `SDEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SDENW {
-    #[doc = "Secondary detection (SD) mode disabled"]
-    DISABLED,
-    #[doc = "Secondary detection (SD) mode enabled"]
-    ENABLED,
-}
-impl SDENW {
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _bits(&self) -> bool {
-        match *self {
-            SDENW::DISABLED => false,
-            SDENW::ENABLED => true,
-        }
-    }
-}
-#[doc = r" Proxy"]
-pub struct _SDENW<'a> {
-    w: &'a mut W,
-}
-impl<'a> _SDENW<'a> {
-    #[doc = r" Writes `variant` to the field"]
-    #[inline]
-    pub fn variant(self, variant: SDENW) -> &'a mut W {
-        {
-            self.bit(variant._bits())
-        }
-    }
-    #[doc = "Secondary detection (SD) mode disabled"]
-    #[inline]
-    pub fn disabled(self) -> &'a mut W {
-        self.variant(SDENW::DISABLED)
-    }
-    #[doc = "Secondary detection (SD) mode enabled"]
-    #[inline]
-    pub fn enabled(self) -> &'a mut W {
-        self.variant(SDENW::ENABLED)
-    }
-    #[doc = r" Sets the field bit"]
-    pub fn set_bit(self) -> &'a mut W {
-        self.bit(true)
-    }
-    #[doc = r" Clears the field bit"]
-    pub fn clear_bit(self) -> &'a mut W {
-        self.bit(false)
-    }
-    #[doc = r" Writes raw bits to the field"]
-    #[inline]
-    pub fn bit(self, value: bool) -> &'a mut W {
-        const MASK: bool = true;
-        const OFFSET: u8 = 3;
-        self.w.bits &= !((MASK as u32) << OFFSET);
-        self.w.bits |= ((value & MASK) as u32) << OFFSET;
-        self.w
-    }
-}
-#[doc = "Values that can be written to the field `DPPU`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DPPUW {
-    #[doc = "signalize disconnect to the host when needed by the user software"]
-    DISABLED,
-    #[doc = "enable the embedded pull-up on the DP line"]
-    ENABLED,
-}
-impl DPPUW {
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _bits(&self) -> bool {
-        match *self {
-            DPPUW::DISABLED => false,
-            DPPUW::ENABLED => true,
-        }
-    }
-}
-#[doc = r" Proxy"]
-pub struct _DPPUW<'a> {
-    w: &'a mut W,
-}
-impl<'a> _DPPUW<'a> {
-    #[doc = r" Writes `variant` to the field"]
-    #[inline]
-    pub fn variant(self, variant: DPPUW) -> &'a mut W {
-        {
-            self.bit(variant._bits())
+            self.bit(variant.into())
         }
     }
     #[doc = "signalize disconnect to the host when needed by the user software"]
-    #[inline]
+    #[inline(always)]
     pub fn disabled(self) -> &'a mut W {
-        self.variant(DPPUW::DISABLED)
+        self.variant(DPPU_A::DISABLED)
     }
     #[doc = "enable the embedded pull-up on the DP line"]
-    #[inline]
+    #[inline(always)]
     pub fn enabled(self) -> &'a mut W {
-        self.variant(DPPUW::ENABLED)
+        self.variant(DPPU_A::ENABLED)
     }
-    #[doc = r" Sets the field bit"]
+    #[doc = r"Sets the field bit"]
+    #[inline(always)]
     pub fn set_bit(self) -> &'a mut W {
         self.bit(true)
     }
-    #[doc = r" Clears the field bit"]
+    #[doc = r"Clears the field bit"]
+    #[inline(always)]
     pub fn clear_bit(self) -> &'a mut W {
         self.bit(false)
     }
-    #[doc = r" Writes raw bits to the field"]
-    #[inline]
+    #[doc = r"Writes raw bits to the field"]
+    #[inline(always)]
     pub fn bit(self, value: bool) -> &'a mut W {
-        const MASK: bool = true;
-        const OFFSET: u8 = 15;
-        self.w.bits &= !((MASK as u32) << OFFSET);
-        self.w.bits |= ((value & MASK) as u32) << OFFSET;
+        self.w.bits = (self.w.bits & !(0x01 << 15)) | (((value as u32) & 0x01) << 15);
         self.w
     }
 }
 impl R {
-    #[doc = r" Value of the register as raw bits"]
-    #[inline]
-    pub fn bits(&self) -> u32 {
-        self.bits
+    #[doc = "Bit 0 - Battery charging detector"]
+    #[inline(always)]
+    pub fn bcden(&self) -> BCDEN_R {
+        BCDEN_R::new((self.bits & 0x01) != 0)
     }
-    #[doc = "Bit 0 - Battery charging detector (BCD) enable"]
-    #[inline]
-    pub fn bcden(&self) -> BCDENR {
-        BCDENR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 0;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[doc = "Bit 1 - Data contact detection"]
+    #[inline(always)]
+    pub fn dcden(&self) -> DCDEN_R {
+        DCDEN_R::new(((self.bits >> 1) & 0x01) != 0)
     }
-    #[doc = "Bit 1 - Data contact detection (DCD) mode enable"]
-    #[inline]
-    pub fn dcden(&self) -> DCDENR {
-        DCDENR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 1;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[doc = "Bit 2 - Primary detection"]
+    #[inline(always)]
+    pub fn pden(&self) -> PDEN_R {
+        PDEN_R::new(((self.bits >> 2) & 0x01) != 0)
     }
-    #[doc = "Bit 2 - Primary detection (PD) mode enable"]
-    #[inline]
-    pub fn pden(&self) -> PDENR {
-        PDENR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 2;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[doc = "Bit 3 - Secondary detection"]
+    #[inline(always)]
+    pub fn sden(&self) -> SDEN_R {
+        SDEN_R::new(((self.bits >> 3) & 0x01) != 0)
     }
-    #[doc = "Bit 3 - Secondary detection (SD) mode enable"]
-    #[inline]
-    pub fn sden(&self) -> SDENR {
-        SDENR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 3;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[doc = "Bit 4 - Data contact detection"]
+    #[inline(always)]
+    pub fn dcdet(&self) -> DCDET_R {
+        DCDET_R::new(((self.bits >> 4) & 0x01) != 0)
     }
-    #[doc = "Bit 4 - Data contact detection (DCD) status"]
-    #[inline]
-    pub fn dcdet(&self) -> DCDETR {
-        DCDETR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 4;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[doc = "Bit 5 - Primary detection"]
+    #[inline(always)]
+    pub fn pdet(&self) -> PDET_R {
+        PDET_R::new(((self.bits >> 5) & 0x01) != 0)
     }
-    #[doc = "Bit 5 - Primary detection (PD) status"]
-    #[inline]
-    pub fn pdet(&self) -> PDETR {
-        PDETR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 5;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
-    }
-    #[doc = "Bit 6 - Secondary detection (SD) status"]
-    #[inline]
-    pub fn sdet(&self) -> SDETR {
-        SDETR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 6;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[doc = "Bit 6 - Secondary detection"]
+    #[inline(always)]
+    pub fn sdet(&self) -> SDET_R {
+        SDET_R::new(((self.bits >> 6) & 0x01) != 0)
     }
     #[doc = "Bit 7 - DM pull-up detection status"]
-    #[inline]
-    pub fn ps2det(&self) -> PS2DETR {
-        PS2DETR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 7;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[inline(always)]
+    pub fn ps2det(&self) -> PS2DET_R {
+        PS2DET_R::new(((self.bits >> 7) & 0x01) != 0)
     }
     #[doc = "Bit 15 - DP pull-up control"]
-    #[inline]
-    pub fn dppu(&self) -> DPPUR {
-        DPPUR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 15;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[inline(always)]
+    pub fn dppu(&self) -> DPPU_R {
+        DPPU_R::new(((self.bits >> 15) & 0x01) != 0)
     }
 }
 impl W {
-    #[doc = r" Reset value of the register"]
-    #[inline]
-    pub fn reset_value() -> W {
-        W { bits: 0 }
+    #[doc = "Bit 0 - Battery charging detector"]
+    #[inline(always)]
+    pub fn bcden(&mut self) -> BCDEN_W {
+        BCDEN_W { w: self }
     }
-    #[doc = r" Writes raw bits to the register"]
-    #[inline]
-    pub unsafe fn bits(&mut self, bits: u32) -> &mut Self {
-        self.bits = bits;
-        self
+    #[doc = "Bit 1 - Data contact detection"]
+    #[inline(always)]
+    pub fn dcden(&mut self) -> DCDEN_W {
+        DCDEN_W { w: self }
     }
-    #[doc = "Bit 0 - Battery charging detector (BCD) enable"]
-    #[inline]
-    pub fn bcden(&mut self) -> _BCDENW {
-        _BCDENW { w: self }
+    #[doc = "Bit 2 - Primary detection"]
+    #[inline(always)]
+    pub fn pden(&mut self) -> PDEN_W {
+        PDEN_W { w: self }
     }
-    #[doc = "Bit 1 - Data contact detection (DCD) mode enable"]
-    #[inline]
-    pub fn dcden(&mut self) -> _DCDENW {
-        _DCDENW { w: self }
-    }
-    #[doc = "Bit 2 - Primary detection (PD) mode enable"]
-    #[inline]
-    pub fn pden(&mut self) -> _PDENW {
-        _PDENW { w: self }
-    }
-    #[doc = "Bit 3 - Secondary detection (SD) mode enable"]
-    #[inline]
-    pub fn sden(&mut self) -> _SDENW {
-        _SDENW { w: self }
+    #[doc = "Bit 3 - Secondary detection"]
+    #[inline(always)]
+    pub fn sden(&mut self) -> SDEN_W {
+        SDEN_W { w: self }
     }
     #[doc = "Bit 15 - DP pull-up control"]
-    #[inline]
-    pub fn dppu(&mut self) -> _DPPUW {
-        _DPPUW { w: self }
+    #[inline(always)]
+    pub fn dppu(&mut self) -> DPPU_W {
+        DPPU_W { w: self }
     }
 }
