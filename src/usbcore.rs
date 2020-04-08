@@ -60,24 +60,27 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
     fn configure_endpoints(&mut self, alloc: &UsbEndpointAllocator) -> Result<usize> {
         let mut max_endpoint = 0;
 
+        let mem = USB::EP_MEMORY as *mut UsbAccessType;
+
+        unsafe { core::ptr::write_bytes(mem, 0, USB::EP_MEMORY_SIZE); }
+
         let mut memory_alloc = EndpointMemoryAllocator::<USB>::new();
 
         for i in 0..NUM_ENDPOINTS {
             let ep = EndpointPair::<USB>::new(i as u8);
-
-            ep.set_address(i as u8);
 
             let ep_in = &alloc.ep_in[i];
             if ep_in.iface.is_some() {
                 let offset = memory_alloc.allocate_buffer(ep_in.max_packet_size as usize)?;
 
                 ep.descr().addr_tx.set(offset as UsbAccessType);
+                ep.descr().count_tx.set(0);
 
                 max_endpoint = i;
             }
 
             let ep_out = &alloc.ep_out[i];
-            if alloc.ep_out[i].iface.is_some() {
+            if ep_out.iface.is_some() {
                 let (size, size_bits) = calculate_count_rx(ep_out.max_packet_size as usize)?;
                 let offset = memory_alloc.allocate_buffer(size as usize)?;
 
@@ -90,6 +93,40 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
 
         Ok(max_endpoint)
     }
+
+    /*pub fn debug_dump(&self) {
+        for i in 0..=2 {
+            let ep = EndpointPair::<USB>::new(i as u8);
+
+            rprintln!("EP {}:", i);
+            rprintln!("  addr_tx {} count_tx {:04x} addr_rx {} count_rx {:04x}",
+                ep.descr().addr_tx.get(),
+                ep.descr().count_tx.get(),
+                ep.descr().addr_rx.get(),
+                ep.descr().count_rx.get());
+
+            let v = ep.reg().read();
+
+            rprintln!("  ctr_rx {} stat_rx {} ep_type {} ctr_tx {} stat_tx {} ea {}",
+                v.ctr_rx().bit_is_set(),
+                v.stat_rx().bits(),
+                v.ep_type().bits(),
+                v.ctr_tx().bit_is_set(),
+                v.stat_tx().bits(),
+                v.ea().bits());
+        }
+    }
+
+    pub fn memory_dump(&self) {
+        let mem = USB::EP_MEMORY as *mut UsbAccessType;
+
+        for i in 0..64 {
+            let p = unsafe { mem.offset(i as isize) };
+
+            rprintln!("{:?} {:04x}", p, unsafe { core::ptr::read(p) } & 0xffff);
+            //rprintln!("{:04x} {:04x}", i, unsafe { core::ptr::read(mem.offset(i as isize)) } & 0xffff);
+        }
+    }*/
 }
 
 impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
@@ -104,8 +141,6 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
     }
 
     fn enable(&mut self, ep_alloc: UsbEndpointAllocator) -> Result<()> {
-        self.max_endpoint = self.configure_endpoints(&ep_alloc)?;
-
         self.regs.cntr.modify(|_, w| w.pdwn().clear_bit());
 
         USB::startup_delay();
@@ -124,6 +159,8 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
             self.regs.bcdr.modify(|_, w| w.dppu().set_bit());
         }
 
+        self.max_endpoint = self.configure_endpoints(&ep_alloc)?;
+
         Ok(())
     }
 
@@ -131,7 +168,7 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
         self.regs.istr.modify(|_, w| unsafe { w.bits(0) });
         self.regs.daddr.modify(|_, w| w.ef().set_bit().add().bits(0));
 
-        for index in 0..=self.max_endpoint {
+        for index in 1..=self.max_endpoint {
             let ep = EndpointPair::<USB>::new(index as u8);
 
             ep.disable_out();
@@ -173,7 +210,7 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
 
                 let v = ep.reg().read();
 
-                if v.ctr_rx().bit_is_set() || v.setup().bit_is_set() {
+                if v.ctr_rx().bit_is_set() {
                     ep_out |= bit;
                 }
 
@@ -185,6 +222,10 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
                 bit <<= 1;
             }
 
+            /*if ep_out != 0 {
+                self.memory_dump();
+            }*/
+
             PollResult::Data {
                 ep_out,
                 ep_in_complete,
@@ -193,22 +234,6 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
             PollResult::None
         }
     }
-
-    /*fn write(&self, ep_addr: EndpointAddress, buf: &[u8]) -> Result<usize> {
-        if !ep_addr.is_in() {
-            return Err(UsbError::InvalidEndpoint);
-        }
-
-        self.endpoints[ep_addr.index()].write(buf)
-    }
-
-    fn read(&self, ep_addr: EndpointAddress, buf: &mut [u8]) -> Result<usize> {
-        if !ep_addr.is_out() {
-            return Err(UsbError::InvalidEndpoint);
-        }
-
-        self.endpoints[ep_addr.index()].read(buf)
-    }*/
 
     fn set_stalled(&mut self, ep_addr: EndpointAddress, stalled: bool) {
         let ep = EndpointPair::<USB>::new(ep_addr.number());
@@ -284,7 +309,7 @@ impl UsbEndpointAllocator {
             eps[i].iface = Some(self.iface);
             self.ep_type_in_alt[i] = Some(config.ep_type());
 
-            // Round to the nearest size divisible by two
+            // Round to the nearest even size
             let size = (config.max_packet_size() + 1) & !1;
 
             if size > eps[i].max_packet_size {

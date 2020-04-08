@@ -3,7 +3,6 @@ use crate::registers::UsbRegisters;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
 use core::mem;
-use cortex_m::interrupt;
 use usb_device::endpoint::{EndpointAddress, EndpointConfig, EndpointType, OutPacketType};
 use usb_device::usbcore;
 use usb_device::{Result, UsbError, UsbDirection};
@@ -70,32 +69,19 @@ impl<USB: UsbPeripheral> EndpointPair<USB> {
         UsbRegisters::<USB>::ep_register(self.index)
     }
 
-    pub fn set_address(&self, addr: u8) {
-        self.reg()
-            .modify(|_, w| set_invariant_values(w).ea().bits(addr));
-    }
-
     fn set_stat_rx(&self, status: EndpointStatus) {
-        // Use a critical section because set_stat_rx may be called concurrently by UsbCore and the
-        // operation isn't entirely invariant. The register also uses weird toggle logic.
-        interrupt::free(|_| {
-            self.reg().modify(|r, w| {
-                set_invariant_values(w)
-                    .stat_rx()
-                    .bits(r.stat_rx().bits() ^ (status as u8))
-            });
+        self.reg().modify(|r, w| {
+            set_invariant_values(w)
+                .stat_rx()
+                .bits(r.stat_rx().bits() ^ (status as u8))
         });
     }
 
     fn set_stat_tx(&self, status: EndpointStatus) {
-        // Use a critical section because set_stat_tx may be called concurrently by UsbCore and the
-        // operation isn't entirely invariant. The register also uses weird toggle logic.
-        interrupt::free(|_| {
-            self.reg().modify(|r, w| {
-                set_invariant_values(w)
-                    .stat_tx()
-                    .bits(r.stat_tx().bits() ^ (status as u8))
-            });
+        self.reg().modify(|r, w| {
+            set_invariant_values(w)
+                .stat_tx()
+                .bits(r.stat_tx().bits() ^ (status as u8))
         });
     }
 
@@ -143,9 +129,9 @@ impl<USB: UsbPeripheral> UsbEndpointOut<USB> {
     }
 
     fn buf(&mut self) -> EndpointBuffer {
-        let offset_bytes = self.pair.descr().addr_rx.get() as usize;
+        let addr = self.pair.descr().addr_rx.get() as usize;
 
-        EndpointBuffer::new::<USB>(offset_bytes, self.buf_size_bytes as usize)
+        EndpointBuffer::new::<USB>(addr, self.buf_size_bytes as usize)
     }
 }
 
@@ -159,7 +145,8 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointOut<USB> {
             set_invariant_values(w)
                 .ep_type().bits(config.ep_type().bits())
                 .ep_kind().clear_bit()
-                .ctr_rx().clear_bit());
+                .ctr_rx().clear_bit()
+                .ea().bits(self.pair.index));
 
         self.pair.set_stat_rx(EndpointStatus::Valid);
     }
@@ -222,9 +209,9 @@ impl<USB: UsbPeripheral> UsbEndpointIn<USB> {
     }
 
     fn buf(&mut self) -> EndpointBuffer {
-        let offset_bytes = self.pair.descr().addr_tx.get() as usize;
+        let addr = self.pair.descr().addr_tx.get() as usize;
 
-        EndpointBuffer::new::<USB>(offset_bytes, self.buf_size_bytes as usize)
+        EndpointBuffer::new::<USB>(addr, self.buf_size_bytes as usize)
     }
 }
 
@@ -234,12 +221,12 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointIn<USB> {
     }
 
     unsafe fn enable(&mut self, config: &EndpointConfig) {
-        self.pair.reg().modify(|_, w| {
+        self.pair.reg().modify(|_, w|
             set_invariant_values(w)
                 .ep_type().bits(config.ep_type().bits())
                 .ep_kind().clear_bit()
                 .ctr_tx().clear_bit()
-        });
+                .ea().bits(self.pair.index));
 
         self.pair.set_stat_tx(EndpointStatus::Nak);
     }
