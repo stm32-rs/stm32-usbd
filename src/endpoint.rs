@@ -310,9 +310,7 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpointIn for UsbEndpointIn<USB> {
             return Err(UsbError::BufferOverflow);
         }
 
-        let reg = self.pair.reg();
-
-        match reg.read().stat_tx().bits().into() {
+        match self.pair.reg().read().stat_tx().bits().into() {
             EndpointStatus::Valid | EndpointStatus::Disabled => return Err(UsbError::WouldBlock),
             _ => {}
         };
@@ -323,6 +321,14 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpointIn for UsbEndpointIn<USB> {
         self.pair.set_stat_tx(EndpointStatus::Valid);
 
         Ok(())
+    }
+
+    fn flush(&mut self) -> Result<()> {
+        if self.pair.reg().read().stat_tx().is_valid() {
+            Err(UsbError::WouldBlock)
+        } else {
+            Ok(())
+        }
     }
 }
 
