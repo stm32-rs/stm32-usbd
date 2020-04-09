@@ -27,12 +27,12 @@ pub struct Reg<U, REG> {
     _marker: marker::PhantomData<REG>,
 }
 
-unsafe impl<U: Send, REG> Send for Reg<U, REG> { }
+unsafe impl<U: Send, REG> Send for Reg<U, REG> {}
 
 impl<U, REG> Reg<U, REG>
 where
     Self: Readable,
-    U: Copy
+    U: Copy,
 {
     ///Reads the contents of `Readable` register
     ///
@@ -48,13 +48,16 @@ where
     ///```
     #[inline(always)]
     pub fn read(&self) -> R<U, Self> {
-        R {bits: self.register.get(), _reg: marker::PhantomData}
+        R {
+            bits: self.register.get(),
+            _reg: marker::PhantomData,
+        }
     }
 }
 
 impl<U, REG> Reg<U, REG>
 where
-    Self: ResetValue<Type=U> + Writable,
+    Self: ResetValue<Type = U> + Writable,
     U: Copy,
 {
     ///Writes the reset value to `Writable` register
@@ -68,8 +71,8 @@ where
 
 impl<U, REG> Reg<U, REG>
 where
-    Self: ResetValue<Type=U> + Writable,
-    U: Copy
+    Self: ResetValue<Type = U> + Writable,
+    U: Copy,
 {
     ///Writes bits to `Writable` register
     ///
@@ -89,16 +92,22 @@ where
     #[inline(always)]
     pub fn write<F>(&self, f: F)
     where
-        F: FnOnce(&mut W<U, Self>) -> &mut W<U, Self>
+        F: FnOnce(&mut W<U, Self>) -> &mut W<U, Self>,
     {
-        self.register.set(f(&mut W {bits: Self::reset_value(), _reg: marker::PhantomData}).bits);
+        self.register.set(
+            f(&mut W {
+                bits: Self::reset_value(),
+                _reg: marker::PhantomData,
+            })
+            .bits,
+        );
     }
 }
 
 impl<U, REG> Reg<U, REG>
 where
     Self: Writable,
-    U: Copy + Default
+    U: Copy + Default,
 {
     ///Writes Zero to `Writable` register
     ///
@@ -106,9 +115,15 @@ where
     #[inline(always)]
     pub fn write_with_zero<F>(&self, f: F)
     where
-        F: FnOnce(&mut W<U, Self>) -> &mut W<U, Self>
+        F: FnOnce(&mut W<U, Self>) -> &mut W<U, Self>,
     {
-        self.register.set(f(&mut W {bits: U::default(), _reg: marker::PhantomData }).bits);
+        self.register.set(
+            f(&mut W {
+                bits: U::default(),
+                _reg: marker::PhantomData,
+            })
+            .bits,
+        );
     }
 }
 
@@ -137,10 +152,22 @@ where
     #[inline(always)]
     pub fn modify<F>(&self, f: F)
     where
-        for<'w> F: FnOnce(&R<U, Self>, &'w mut W<U, Self>) -> &'w mut W<U, Self>
+        for<'w> F: FnOnce(&R<U, Self>, &'w mut W<U, Self>) -> &'w mut W<U, Self>,
     {
         let bits = self.register.get();
-        self.register.set(f(&R {bits, _reg: marker::PhantomData}, &mut W {bits, _reg: marker::PhantomData}).bits);
+        self.register.set(
+            f(
+                &R {
+                    bits,
+                    _reg: marker::PhantomData,
+                },
+                &mut W {
+                    bits,
+                    _reg: marker::PhantomData,
+                },
+            )
+            .bits,
+        );
     }
 }
 
@@ -155,7 +182,7 @@ pub struct R<U, T> {
 
 impl<U, T> R<U, T>
 where
-    U: Copy
+    U: Copy,
 {
     ///Create new instance of reader
     #[inline(always)]
@@ -175,7 +202,7 @@ where
 impl<U, T, FI> PartialEq<FI> for R<U, T>
 where
     U: PartialEq,
-    FI: Copy+Into<U>
+    FI: Copy + Into<U>,
 {
     #[inline(always)]
     fn eq(&self, other: &FI) -> bool {
@@ -220,11 +247,10 @@ impl<U, REG> W<U, REG> {
 }
 
 ///Used if enumerated values cover not the whole range
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Variant<U, T> {
     ///Expected variant
     Val(T),
     ///Raw bits
     Res(U),
 }
-
