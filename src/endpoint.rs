@@ -129,11 +129,13 @@ impl<USB: UsbPeripheral> EndpointPair<USB> {
     }
 
     pub fn set_out_stalled(&self, stalled: bool) {
-        self.set_stat_rx(if stalled {
-            EndpointStatus::Stall
-        } else {
-            EndpointStatus::Valid
-        })
+        if !self.reg().read().stat_rx().is_disabled() {
+           self.set_stat_rx(if stalled {
+                EndpointStatus::Stall
+            } else {
+                EndpointStatus::Valid
+            })
+        }
     }
 
     pub fn is_out_stalled(&self) -> bool {
@@ -145,11 +147,13 @@ impl<USB: UsbPeripheral> EndpointPair<USB> {
     }
 
     pub fn set_in_stalled(&self, stalled: bool) {
-        self.set_stat_tx(if stalled {
-            EndpointStatus::Stall
-        } else {
-            EndpointStatus::Nak
-        })
+        if !self.reg().read().stat_tx().is_disabled() {
+            self.set_stat_tx(if stalled {
+                EndpointStatus::Stall
+            } else {
+                EndpointStatus::Nak
+            })
+        }
     }
 
     pub fn is_in_stalled(&self) -> bool {
