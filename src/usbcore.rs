@@ -19,7 +19,7 @@ use crate::UsbPeripheral;
 pub struct UsbCore<USB> {
     peripheral: USB,
     regs: UsbRegisters<USB>,
-    max_endpoint: usize,
+    endpoint_cap: usize,
 }
 
 impl<USB: UsbPeripheral> UsbCore<USB> {
@@ -30,7 +30,7 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
         UsbCore {
             peripheral,
             regs: UsbRegisters::new(),
-            max_endpoint: 0,
+            endpoint_cap: 0,
         }
     }
 
@@ -76,7 +76,7 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
                 ep.descr().addr_tx.set(offset as UsbAccessType);
                 ep.descr().count_tx.set(0);
 
-                max_endpoint = i;
+                max_endpoint = i + 1;
             }
 
             let ep_out = &alloc.ep_out[i];
@@ -87,9 +87,11 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
                 ep.descr().addr_rx.set(offset as UsbAccessType);
                 ep.descr().count_rx.set(size_bits as UsbAccessType);
 
-                max_endpoint = i;
+                max_endpoint = i + 1;
             }
         }
+
+
 
         Ok(max_endpoint)
     }
@@ -159,7 +161,7 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
             self.regs.bcdr.modify(|_, w| w.dppu().set_bit());
         }
 
-        self.max_endpoint = self.configure_endpoints(&ep_alloc)?;
+        self.endpoint_cap = self.configure_endpoints(&ep_alloc)?;
 
         Ok(())
     }
@@ -168,7 +170,7 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
         self.regs.istr.modify(|_, w| unsafe { w.bits(0) });
         self.regs.daddr.modify(|_, w| w.ef().set_bit().add().bits(0));
 
-        for index in 1..=self.max_endpoint {
+        for index in 1..self.endpoint_cap {
             let ep = EndpointPair::<USB>::new(index as u8);
 
             ep.disable_out();
@@ -205,7 +207,7 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
             let mut ep_in_complete = 0;
             let mut bit = 1;
 
-            for index in 0..=self.max_endpoint {
+            for index in 0..self.endpoint_cap {
                 let ep = EndpointPair::<USB>::new(index as u8);
 
                 let v = ep.reg().read();

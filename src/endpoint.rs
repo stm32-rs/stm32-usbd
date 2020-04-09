@@ -168,9 +168,7 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpointOut for UsbEndpointOut<USB> {
     fn read_packet(&mut self, data: &mut [u8]) -> Result<(usize, OutPacketType)> {
         let reg_v = self.pair.reg().read();
 
-        let status: EndpointStatus = reg_v.stat_rx().bits().into();
-
-        if status == EndpointStatus::Disabled || !reg_v.ctr_rx().bit_is_set() {
+        if !reg_v.ctr_rx().bit_is_set() {
             return Err(UsbError::WouldBlock);
         }
 
