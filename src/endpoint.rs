@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 use core::mem;
 use usb_device::endpoint::{EndpointAddress, EndpointConfig, EndpointType, OutPacketType};
 use usb_device::usbcore;
-use usb_device::{Result, UsbError, UsbDirection};
+use usb_device::{Result, UsbDirection, UsbError};
 
 // Use bundled register definitions instead of device-specific ones
 // This should work because register definitions from newer chips seem to be
@@ -86,8 +86,7 @@ impl<USB: UsbPeripheral> EndpointPair<USB> {
     }
 
     pub fn clear_ctr_tx(&self) {
-        self.reg()
-            .modify(|_, w| set_invariant_values(w).ctr_tx().clear_bit());
+        self.reg().modify(|_, w| set_invariant_values(w).ctr_tx().clear_bit());
     }
 
     pub fn disable_out(&self) {
@@ -95,7 +94,11 @@ impl<USB: UsbPeripheral> EndpointPair<USB> {
     }
 
     pub fn set_out_stalled(&self, stalled: bool) {
-        self.set_stat_rx(if stalled { EndpointStatus::Stall } else { EndpointStatus::Valid })
+        self.set_stat_rx(if stalled {
+            EndpointStatus::Stall
+        } else {
+            EndpointStatus::Valid
+        })
     }
 
     pub fn is_out_stalled(&self) -> bool {
@@ -107,7 +110,11 @@ impl<USB: UsbPeripheral> EndpointPair<USB> {
     }
 
     pub fn set_in_stalled(&self, stalled: bool) {
-        self.set_stat_tx(if stalled { EndpointStatus::Stall } else { EndpointStatus::Nak })
+        self.set_stat_tx(if stalled {
+            EndpointStatus::Stall
+        } else {
+            EndpointStatus::Nak
+        })
     }
 
     pub fn is_in_stalled(&self) -> bool {
@@ -141,12 +148,17 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointOut<USB> {
     }
 
     unsafe fn enable(&mut self, config: &EndpointConfig) {
-        self.pair.reg().modify(|_, w|
+        self.pair.reg().modify(|_, w| {
             set_invariant_values(w)
-                .ep_type().bits(config.ep_type().bits())
-                .ep_kind().clear_bit()
-                .ctr_rx().clear_bit()
-                .ea().bits(self.pair.index));
+                .ep_type()
+                .bits(config.ep_type().bits())
+                .ep_kind()
+                .clear_bit()
+                .ctr_rx()
+                .clear_bit()
+                .ea()
+                .bits(self.pair.index)
+        });
 
         self.pair.set_stat_rx(EndpointStatus::Valid);
     }
@@ -178,7 +190,9 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpointOut for UsbEndpointOut<USB> {
             OutPacketType::Data
         };
 
-        self.pair.reg().modify(|_, w| set_invariant_values(w).ctr_rx().clear_bit());
+        self.pair
+            .reg()
+            .modify(|_, w| set_invariant_values(w).ctr_rx().clear_bit());
 
         let count = (self.pair.descr().count_rx.get() & 0x3ff) as usize;
         if count > data.len() {
@@ -219,12 +233,17 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointIn<USB> {
     }
 
     unsafe fn enable(&mut self, config: &EndpointConfig) {
-        self.pair.reg().modify(|_, w|
+        self.pair.reg().modify(|_, w| {
             set_invariant_values(w)
-                .ep_type().bits(config.ep_type().bits())
-                .ep_kind().clear_bit()
-                .ctr_tx().clear_bit()
-                .ea().bits(self.pair.index));
+                .ep_type()
+                .bits(config.ep_type().bits())
+                .ep_kind()
+                .clear_bit()
+                .ctr_tx()
+                .clear_bit()
+                .ea()
+                .bits(self.pair.index)
+        });
 
         self.pair.set_stat_tx(EndpointStatus::Nak);
     }

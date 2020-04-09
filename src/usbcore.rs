@@ -1,16 +1,10 @@
 //! USB peripheral driver.
 
-use usb_device::usbcore::{self, PollResult};
 use usb_device::endpoint::{EndpointAddress, EndpointConfig, EndpointType};
-use usb_device::{Result, UsbError, UsbDirection};
+use usb_device::usbcore::{self, PollResult};
+use usb_device::{Result, UsbDirection, UsbError};
 
-use crate::endpoint::{
-    calculate_count_rx,
-    EndpointPair,
-    UsbEndpointOut,
-    UsbEndpointIn,
-    NUM_ENDPOINTS
-};
+use crate::endpoint::{calculate_count_rx, EndpointPair, UsbEndpointIn, UsbEndpointOut, NUM_ENDPOINTS};
 use crate::endpoint_memory::{EndpointMemoryAllocator, UsbAccessType};
 use crate::registers::UsbRegisters;
 use crate::UsbPeripheral;
@@ -62,7 +56,9 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
 
         let mem = USB::EP_MEMORY as *mut UsbAccessType;
 
-        unsafe { core::ptr::write_bytes(mem, 0, USB::EP_MEMORY_SIZE); }
+        unsafe {
+            core::ptr::write_bytes(mem, 0, USB::EP_MEMORY_SIZE);
+        }
 
         let mut memory_alloc = EndpointMemoryAllocator::<USB>::new();
 
@@ -90,8 +86,6 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
                 max_endpoint = i + 1;
             }
         }
-
-
 
         Ok(max_endpoint)
     }
@@ -228,10 +222,7 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
                 self.memory_dump();
             }*/
 
-            PollResult::Data {
-                ep_out,
-                ep_in_complete,
-            }
+            PollResult::Data { ep_out, ep_in_complete }
         } else {
             PollResult::None
         }
@@ -256,15 +247,11 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
     }
 
     fn suspend(&mut self) {
-        self.regs
-            .cntr
-            .modify(|_, w| w.fsusp().set_bit().lpmode().set_bit());
+        self.regs.cntr.modify(|_, w| w.fsusp().set_bit().lpmode().set_bit());
     }
 
     fn resume(&mut self) {
-        self.regs
-            .cntr
-            .modify(|_, w| w.fsusp().clear_bit().lpmode().clear_bit());
+        self.regs.cntr.modify(|_, w| w.fsusp().clear_bit().lpmode().clear_bit());
     }
 }
 
@@ -284,7 +271,11 @@ pub struct UsbEndpointAllocator {
 
 impl UsbEndpointAllocator {
     fn alloc(&mut self, dir: UsbDirection, config: &EndpointConfig) -> Result<(u8, u16)> {
-        let mut eps = if dir == UsbDirection::Out { &mut self.ep_out } else { &mut self.ep_in };
+        let mut eps = if dir == UsbDirection::Out {
+            &mut self.ep_out
+        } else {
+            &mut self.ep_in
+        };
 
         let range = match config.fixed_address() {
             Some(addr) => {
@@ -295,7 +286,7 @@ impl UsbEndpointAllocator {
                 let i = addr.number() as usize;
 
                 i..(i + 1)
-            },
+            }
             None => (1..NUM_ENDPOINTS),
         };
 

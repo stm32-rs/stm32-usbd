@@ -16,11 +16,7 @@ impl EndpointBuffer {
     pub fn new<USB: UsbPeripheral>(descr_addr: usize, size_bytes: usize) -> Self {
         let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<UsbAccessType>;
 
-        let mem = unsafe {
-            slice::from_raw_parts_mut(
-                ep_mem_ptr.offset((descr_addr >> 1) as isize),
-                size_bytes >> 1)
-        };
+        let mem = unsafe { slice::from_raw_parts_mut(ep_mem_ptr.offset((descr_addr >> 1) as isize), size_bytes >> 1) };
 
         Self(mem)
     }
