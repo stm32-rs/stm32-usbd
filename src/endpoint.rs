@@ -1,5 +1,4 @@
-use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator, UsbAccessType};
-use crate::registers::UsbRegisters;
+use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, UsbAccessType};
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
 use core::mem;
@@ -13,6 +12,41 @@ use usb_device::{Result, UsbDirection, UsbError};
 pub use crate::pac::usb;
 
 pub const NUM_ENDPOINTS: usize = 8;
+
+/// This struct is guaranteed to only contain in-bounds endpoints IDs. The value is always in the
+/// range 0..NUM_ENDPOINTS (exclusive)
+#[derive(Copy, Clone, Debug)]
+pub struct EndpointIndex(u8);
+
+impl EndpointIndex {
+    pub fn try_from(index: u8) -> Option<Self> {
+        if (index as usize) >= NUM_ENDPOINTS {
+            return None
+        }
+
+        Some(Self(index))
+    }
+
+    /// # Safety
+    ///
+    /// The value passed in must be in the range 0..NUM_ENDPOINTS.
+    pub unsafe fn new_unchecked(index: u8) -> Self {
+        debug_assert!(usize::from(index) < NUM_ENDPOINTS);
+        Self(index)
+    }
+}
+
+impl From<EndpointIndex> for u8 {
+    fn from(index: EndpointIndex) -> u8 {
+        index.0
+    }
+}
+
+impl From<EndpointIndex> for usize {
+    fn from(index: EndpointIndex) -> usize {
+        index.0.into()
+    }
+}
 
 pub fn calculate_count_rx(mut size: usize) -> Result<(usize, u16)> {
     if size <= 62 {
@@ -48,13 +82,13 @@ fn set_invariant_values(w: &mut usb::epr::W) -> &mut usb::epr::W {
 }
 
 /// On this driver endpoints come in bizarrely linked pairs of OUT/IN
-pub(crate) struct EndpointPair<USB: UsbPeripheral> {
-    pub index: u8,
+pub struct EndpointPair<USB: UsbPeripheral> {
+    pub index: EndpointIndex,
     _marker: PhantomData<USB>,
 }
 
 impl<USB: UsbPeripheral> EndpointPair<USB> {
-    pub fn new(index: u8) -> Self {
+    pub fn get(index: EndpointIndex) -> Self {
         Self {
             index,
             _marker: PhantomData,
@@ -62,11 +96,12 @@ impl<USB: UsbPeripheral> EndpointPair<USB> {
     }
 
     pub(crate) fn descr(&self) -> &'static BufferDescriptor {
-        EndpointMemoryAllocator::<USB>::buffer_descriptor(self.index)
+        BufferDescriptor::get::<USB>(self.index)
     }
 
-    pub(crate) fn reg(&self) -> &'static usb::EPR {
-        UsbRegisters::<USB>::ep_register(self.index)
+    pub fn reg(&self) -> &'static usb::EPR {
+        let usb_ptr = USB::REGISTERS as *const usb::RegisterBlock;
+        unsafe { &(*usb_ptr).epr.get_unchecked(usize::from(self.index)) }
     }
 
     fn set_stat_rx(&self, status: EndpointStatus) {
@@ -128,9 +163,9 @@ pub struct UsbEndpointOut<USB: UsbPeripheral> {
 }
 
 impl<USB: UsbPeripheral> UsbEndpointOut<USB> {
-    pub(crate) fn new(index: u8, buf_size_bytes: u16) -> Self {
+    pub(crate) fn new(index: EndpointIndex, buf_size_bytes: u16) -> Self {
         Self {
-            pair: EndpointPair::new(index),
+            pair: EndpointPair::get(index),
             buf_size_bytes,
         }
     }
@@ -138,13 +173,15 @@ impl<USB: UsbPeripheral> UsbEndpointOut<USB> {
     fn buf(&mut self) -> EndpointBuffer {
         let addr = self.pair.descr().addr_rx.get() as usize;
 
-        EndpointBuffer::new::<USB>(addr, self.buf_size_bytes as usize)
+        unsafe {
+            EndpointBuffer::get::<USB>(addr, self.buf_size_bytes as usize)
+        }
     }
 }
 
 impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointOut<USB> {
     fn address(&self) -> EndpointAddress {
-        EndpointAddress::from_parts(self.pair.index, UsbDirection::Out)
+        EndpointAddress::from_parts(self.pair.index.into(), UsbDirection::Out)
     }
 
     unsafe fn enable(&mut self, config: &EndpointConfig) {
@@ -157,7 +194,7 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointOut<USB> {
                 .ctr_rx()
                 .clear_bit()
                 .ea()
-                .bits(self.pair.index)
+                .bits(self.pair.index.into())
         });
 
         self.pair.set_stat_rx(EndpointStatus::Valid);
@@ -213,9 +250,9 @@ pub struct UsbEndpointIn<USB: UsbPeripheral> {
 }
 
 impl<USB: UsbPeripheral> UsbEndpointIn<USB> {
-    pub(crate) fn new(index: u8, buf_size_bytes: u16) -> Self {
+    pub(crate) fn new(index: EndpointIndex, buf_size_bytes: u16) -> Self {
         Self {
-            pair: EndpointPair::new(index),
+            pair: EndpointPair::get(index),
             buf_size_bytes,
         }
     }
@@ -223,13 +260,15 @@ impl<USB: UsbPeripheral> UsbEndpointIn<USB> {
     fn buf(&mut self) -> EndpointBuffer {
         let addr = self.pair.descr().addr_tx.get() as usize;
 
-        EndpointBuffer::new::<USB>(addr, self.buf_size_bytes as usize)
+        unsafe {
+            EndpointBuffer::get::<USB>(addr, self.buf_size_bytes as usize)
+        }
     }
 }
 
 impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointIn<USB> {
     fn address(&self) -> EndpointAddress {
-        EndpointAddress::from_parts(self.pair.index, UsbDirection::In)
+        EndpointAddress::from_parts(self.pair.index.into(), UsbDirection::In)
     }
 
     unsafe fn enable(&mut self, config: &EndpointConfig) {
@@ -242,7 +281,7 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointIn<USB> {
                 .ctr_tx()
                 .clear_bit()
                 .ea()
-                .bits(self.pair.index)
+                .bits(self.pair.index.into())
         });
 
         self.pair.set_stat_tx(EndpointStatus::Nak);

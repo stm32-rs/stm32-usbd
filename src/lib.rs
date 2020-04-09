@@ -7,20 +7,20 @@
 
 #[cfg(not(any(feature = "ram_access_1x16", feature = "ram_access_2x16")))]
 compile_error!("This crate requires one of the ram_access features enabled");
+
 #[cfg(all(feature = "ram_access_1x16", feature = "ram_access_2x16"))]
 compile_error!("Multiple ram_access features are specified. Only a single feature can be specified.");
 
-pub mod usbcore;
-
 pub use crate::usbcore::UsbCore;
 
-/// Temporary compatibility shim
-pub use usbcore::UsbCore as UsbBus;
+/// Temporary compatibility shim because HALs still reference the old name UsbBus.
+pub type UsbBus<USB> = UsbCore<USB>;
 
+mod allocator;
 mod endpoint;
 mod endpoint_memory;
 mod pac;
-mod registers;
+mod usbcore;
 
 /// A trait for device-specific USB peripherals. Implement this to add support for a new hardware
 /// platform. Peripherals that have this trait must have the same register block as STM32 USBFS

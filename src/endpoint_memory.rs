@@ -1,4 +1,4 @@
-use crate::endpoint::NUM_ENDPOINTS;
+use crate::endpoint::{EndpointIndex, NUM_ENDPOINTS};
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
 use core::slice;
@@ -7,16 +7,19 @@ use vcell::VolatileCell;
 
 #[cfg(feature = "ram_access_1x16")]
 pub type UsbAccessType = u32;
+
 #[cfg(feature = "ram_access_2x16")]
 pub type UsbAccessType = u16;
 
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
 impl EndpointBuffer {
-    pub fn new<USB: UsbPeripheral>(descr_addr: usize, size_bytes: usize) -> Self {
+    pub unsafe fn get<USB: UsbPeripheral>(descr_addr: usize, size_bytes: usize) -> Self {
         let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<UsbAccessType>;
 
-        let mem = unsafe { slice::from_raw_parts_mut(ep_mem_ptr.offset((descr_addr >> 1) as isize), size_bytes >> 1) };
+        let mem = slice::from_raw_parts_mut(
+            ep_mem_ptr.offset((descr_addr >> 1) as isize),
+            size_bytes >> 1);
 
         Self(mem)
     }
@@ -66,12 +69,6 @@ impl EndpointBuffer {
         }
     }
 
-    /*pub fn offset<USB: UsbPeripheral>(&self) -> usize {
-        let buffer_address = self.0.as_ptr() as usize;
-        let index = (buffer_address - USB::EP_MEMORY as usize) / mem::size_of::<UsbAccessType>();
-        index << 1
-    }*/
-
     pub fn capacity(&self) -> usize {
         self.0.len() << 1
     }
@@ -83,6 +80,12 @@ pub struct BufferDescriptor {
     pub count_tx: VolatileCell<UsbAccessType>,
     pub addr_rx: VolatileCell<UsbAccessType>,
     pub count_rx: VolatileCell<UsbAccessType>,
+}
+
+impl BufferDescriptor {
+    pub fn get<USB: UsbPeripheral>(index: EndpointIndex) -> &'static BufferDescriptor {
+        unsafe { &*(USB::EP_MEMORY as *const BufferDescriptor).offset(usize::from(index) as isize) }
+    }
 }
 
 pub struct EndpointMemoryAllocator<USB> {
@@ -112,11 +115,5 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
         self.next_free_offset += size;
 
         Ok(offset_bytes)
-    }
-
-    pub fn buffer_descriptor(index: u8) -> &'static BufferDescriptor {
-        debug_assert!((index as usize) < NUM_ENDPOINTS);
-
-        unsafe { &*(USB::EP_MEMORY as *const BufferDescriptor).offset(index as isize) }
     }
 }
