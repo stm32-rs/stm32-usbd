@@ -89,6 +89,15 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
         Ok(max_endpoint)
     }
 
+    /*pub fn debug_clear_endpoint_memory(&mut self) {
+        let ep_mem_ptr = USB::EP_MEMORY as *mut vcell::VolatileCell<UsbAccessType>;
+
+        let mem = unsafe { core::slice::from_raw_parts_mut(ep_mem_ptr, USB::EP_MEMORY_SIZE >> 1) };
+        for c in mem.iter_mut() {
+            c.set(0);
+        }
+    }
+
     pub fn debug_dump(&self) {
         use rtt_target::rprintln;
 
@@ -114,7 +123,7 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
         }
     }
 
-    /*pub fn memory_dump(&self) {
+    pub fn memory_dump(&self) {
         let mem = USB::EP_MEMORY as *mut UsbAccessType;
 
         for i in 0..64 {
