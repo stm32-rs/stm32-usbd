@@ -188,7 +188,7 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointOut<USB> {
         EndpointAddress::from_parts(self.pair.index.into(), UsbDirection::Out)
     }
 
-    unsafe fn enable(&mut self, config: &EndpointConfig) {
+    unsafe fn enable(&mut self, config: &EndpointConfig) -> Result<()> {
         self.pair.reg().modify(|_, w| {
             set_invariant_values(w)
                 .ep_type()
@@ -202,18 +202,23 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointOut<USB> {
         });
 
         self.pair.set_stat_rx(EndpointStatus::Valid);
+
+        Ok(())
     }
 
-    fn disable(&mut self) {
+    fn disable(&mut self) -> Result<()> {
         self.pair.disable_out();
+
+        Ok(())
     }
 
-    fn is_stalled(&self) -> bool {
-        self.pair.is_out_stalled()
+    fn is_stalled(&mut self) -> Result<bool> {
+        Ok(self.pair.is_out_stalled())
     }
 
-    fn set_stalled(&mut self, stalled: bool) {
+    fn set_stalled(&mut self, stalled: bool) -> Result<()> {
         self.pair.set_out_stalled(stalled);
+        Ok(())
     }
 }
 
@@ -275,7 +280,7 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointIn<USB> {
         EndpointAddress::from_parts(self.pair.index.into(), UsbDirection::In)
     }
 
-    unsafe fn enable(&mut self, config: &EndpointConfig) {
+    unsafe fn enable(&mut self, config: &EndpointConfig) -> Result<()> {
         self.pair.reg().modify(|_, w| {
             set_invariant_values(w)
                 .ep_type()
@@ -289,18 +294,24 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpoint for UsbEndpointIn<USB> {
         });
 
         self.pair.set_stat_tx(EndpointStatus::Nak);
+
+        Ok(())
     }
 
-    fn disable(&mut self) {
+    fn disable(&mut self) -> Result<()> {
         self.pair.disable_in();
+
+        Ok(())
     }
 
-    fn is_stalled(&self) -> bool {
-        self.pair.is_in_stalled()
+    fn is_stalled(&mut self) -> Result<bool> {
+        Ok(self.pair.is_in_stalled())
     }
 
-    fn set_stalled(&mut self, stalled: bool) {
+    fn set_stalled(&mut self, stalled: bool) -> Result<()> {
         self.pair.set_in_stalled(stalled);
+
+        Ok(())
     }
 }
 

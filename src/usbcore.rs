@@ -2,7 +2,7 @@
 
 use usb_device::endpoint::EndpointAddress;
 use usb_device::usbcore::{self, PollResult};
-use usb_device::{Result, UsbDirection};
+use usb_device::{Result, UsbError, UsbDirection};
 
 use crate::allocator::UsbEndpointAllocator;
 use crate::endpoint::{calculate_count_rx, EndpointIndex, EndpointPair, UsbEndpointIn, UsbEndpointOut, NUM_ENDPOINTS};
@@ -89,9 +89,11 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
         Ok(max_endpoint)
     }
 
-    /*pub fn debug_dump(&self) {
+    pub fn debug_dump(&self) {
+        use rtt_target::rprintln;
+
         for i in 0..=2 {
-            let ep = EndpointPair::<USB>::new(i as u8);
+            let ep = EndpointPair::<USB>::get(unsafe { EndpointIndex::new_unchecked(i as u8) });
 
             rprintln!("EP {}:", i);
             rprintln!("  addr_tx {} count_tx {:04x} addr_rx {} count_rx {:04x}",
@@ -112,7 +114,7 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
         }
     }
 
-    pub fn memory_dump(&self) {
+    /*pub fn memory_dump(&self) {
         let mem = USB::EP_MEMORY as *mut UsbAccessType;
 
         for i in 0..64 {
@@ -159,7 +161,7 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
         Ok(())
     }
 
-    fn reset(&mut self) {
+    fn reset(&mut self) -> Result<()> {
         self.regs().istr.modify(|_, w| unsafe { w.bits(0) });
         self.regs().daddr.modify(|_, w| w.ef().set_bit().add().bits(0));
 
@@ -169,13 +171,17 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
             ep.disable_out();
             ep.disable_in();
         }
+
+        Ok(())
     }
 
-    fn set_device_address(&mut self, addr: u8) {
+    fn set_device_address(&mut self, addr: u8) -> Result<()> {
         self.regs().daddr.modify(|_, w| w.add().bits(addr as u8));
+
+        Ok(())
     }
 
-    fn poll(&mut self) -> PollResult {
+    fn poll(&mut self) -> Result<PollResult> {
         let istr = self.regs().istr.read();
 
         if istr.wkup().bit_is_set() {
@@ -186,15 +192,15 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
             // Required by datasheet
             self.regs().cntr.modify(|_, w| w.fsusp().clear_bit());
 
-            PollResult::Resume
+            Ok(PollResult::Resume)
         } else if istr.reset().bit_is_set() {
             self.regs().istr.write(|w| unsafe { w.bits(0xffff) }.reset().clear_bit());
 
-            PollResult::Reset
+            Ok(PollResult::Reset)
         } else if istr.susp().bit_is_set() {
             self.regs().istr.write(|w| unsafe { w.bits(0xffff) }.susp().clear_bit());
 
-            PollResult::Suspend
+            Ok(PollResult::Suspend)
         } else if istr.ctr().bit_is_set() {
             let mut ep_out = 0;
             let mut ep_in_complete = 0;
@@ -217,13 +223,13 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
                 bit <<= 1;
             }
 
-            PollResult::Data { ep_out, ep_in_complete }
+            Ok(PollResult::Data { ep_out, ep_in_complete })
         } else {
-            PollResult::None
+            Err(UsbError::WouldBlock)
         }
     }
 
-    fn set_stalled(&mut self, ep_addr: EndpointAddress, stalled: bool) {
+    fn set_stalled(&mut self, ep_addr: EndpointAddress, stalled: bool) -> Result<()> {
         if let Some(index) = EndpointIndex::try_from(ep_addr.number()) {
             let ep = EndpointPair::<USB>::get(index);
 
@@ -232,10 +238,12 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
                 UsbDirection::In => ep.set_in_stalled(stalled),
             }
         }
+
+        Ok(())
     }
 
-    fn is_stalled(&self, ep_addr: EndpointAddress) -> bool {
-        if let Some(index) = EndpointIndex::try_from(ep_addr.number()) {
+    fn is_stalled(&mut self, ep_addr: EndpointAddress) -> Result<bool> {
+        Ok(if let Some(index) = EndpointIndex::try_from(ep_addr.number()) {
             let ep = EndpointPair::<USB>::get(index);
 
             match ep_addr.direction() {
@@ -244,14 +252,18 @@ impl<USB: UsbPeripheral> usbcore::UsbCore for UsbCore<USB> {
             }
         } else {
             false
-        }
+        })
     }
 
-    fn suspend(&mut self) {
+    fn suspend(&mut self) -> Result<()> {
         self.regs().cntr.modify(|_, w| w.fsusp().set_bit().lpmode().set_bit());
+
+        Ok(())
     }
 
-    fn resume(&mut self) {
+    fn resume(&mut self) -> Result<()> {
         self.regs().cntr.modify(|_, w| w.fsusp().clear_bit().lpmode().clear_bit());
+
+        Ok(())
     }
 }
