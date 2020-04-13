@@ -54,39 +54,41 @@ impl<USB: UsbPeripheral> UsbCore<USB> {
         self.regs().cntr.modify(|_, w| w.pdwn().bit(pdwn));
     }
 
-    fn configure_endpoints(&mut self, alloc: &UsbEndpointAllocator) -> Result<usize> {
-        let mut max_endpoint = 0;
+    fn configure_endpoints(&mut self, alloc: &UsbEndpointAllocator) -> Result<()> {
+        let mut endpoint_cap = 0;
 
         let mut memory_alloc = EndpointMemoryAllocator::<USB>::new();
 
         for index in 0..NUM_ENDPOINTS {
+            if alloc.eps[index].iface.is_none() {
+                continue;
+            }
+
             let ep = EndpointPair::<USB>::get(unsafe { EndpointIndex::new_unchecked(index as u8) });
 
-            let ep_in = &alloc.ep_in[index];
-            if ep_in.iface.is_some() {
-                let offset = memory_alloc.allocate_buffer(ep_in.max_packet_size as usize)?;
+            // This may allocate zero-size buffers but it doesn't really matter.
+
+            {
+                let offset = memory_alloc.allocate_buffer(alloc.max_packet_size_in[index].into())?;
 
                 ep.descr().addr_tx.set(offset as UsbAccessType);
                 ep.descr().count_tx.set(0);
-
-                max_endpoint = index + 1;
             }
 
-            let ep_out = &alloc.ep_out[index];
-            if ep_out.iface.is_some() {
-                let (size, size_bits) = calculate_count_rx(ep_out.max_packet_size as usize)?;
+            {
+                let (size, size_bits) = calculate_count_rx(alloc.max_packet_size_out[index].into())?;
                 let offset = memory_alloc.allocate_buffer(size as usize)?;
 
                 ep.descr().addr_rx.set(offset as UsbAccessType);
                 ep.descr().count_rx.set(size_bits as UsbAccessType);
-
-                max_endpoint = index + 1;
             }
+
+            endpoint_cap = index + 1;
         }
 
-        self.endpoint_cap = max_endpoint;
+        self.endpoint_cap = endpoint_cap;
 
-        Ok(max_endpoint)
+        Ok(())
     }
 
     /*pub fn debug_clear_endpoint_memory(&mut self) {

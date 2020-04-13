@@ -5,26 +5,35 @@ use usb_device::{Result, UsbDirection, UsbError};
 use usb_device::endpoint::{EndpointConfig, EndpointType};
 use usb_device::usbcore;
 
+// This allocator has to implement some quirky logic because the transfer type field is shared
+// between IN and OUT of the same endpoint index. Currently it will never allocate endpoints from
+// two different interfaces to the same register pair. Two endpoints from different alternate
+// settings of the same interface may be allocated to the same endpoint, because they will never be
+// enabled at the same time.
+
 #[derive(Default)]
-pub(crate) struct EpConfig {
+pub(crate)struct EpPairConfig {
     pub iface: Option<u8>,
-    pub max_packet_size: u16,
+    pub type_in_alt: Option<EndpointType>,
 }
 
 #[derive(Default)]
 pub struct UsbEndpointAllocator {
     iface: u8,
-    ep_type_in_alt: [Option<EndpointType>; NUM_ENDPOINTS],
-    pub(crate) ep_out: [EpConfig; NUM_ENDPOINTS],
-    pub(crate) ep_in: [EpConfig; NUM_ENDPOINTS],
+    //ep_type_in_alt: [Option<EndpointType>; NUM_ENDPOINTS],
+    pub(crate) eps: [EpPairConfig; NUM_ENDPOINTS],
+    pub(crate) max_packet_size_out: [u16; NUM_ENDPOINTS],
+    pub(crate) max_packet_size_in: [u16; NUM_ENDPOINTS],
+    /*pub(crate) ep_out: [EpConfig; NUM_ENDPOINTS],
+    pub(crate) ep_in: [EpConfig; NUM_ENDPOINTS],*/
 }
 
 impl UsbEndpointAllocator {
     fn alloc(&mut self, dir: UsbDirection, config: &EndpointConfig) -> Result<(EndpointIndex, u16)> {
-        let mut eps = if dir == UsbDirection::Out {
-            &mut self.ep_out
+        let max_packet_size = if dir == UsbDirection::Out {
+            &mut self.max_packet_size_out
         } else {
-            &mut self.ep_in
+            &mut self.max_packet_size_in
         };
 
         let range = match config.fixed_address() {
@@ -43,20 +52,22 @@ impl UsbEndpointAllocator {
         for i in range {
             let iface = self.iface;
 
-            if eps[i].iface.map(|i| i != iface).unwrap_or(false)
-                || self.ep_type_in_alt[i].map(|t| t != config.ep_type()).unwrap_or(false)
+            let ep = &mut self.eps[i];
+
+            if ep.iface.map(|i| i != iface).unwrap_or(false)
+                || ep.type_in_alt.map(|t| t != config.ep_type()).unwrap_or(false)
             {
                 continue;
             }
 
-            eps[i].iface = Some(self.iface);
-            self.ep_type_in_alt[i] = Some(config.ep_type());
+            ep.iface = Some(self.iface);
+            ep.type_in_alt = Some(config.ep_type());
 
             // Round to the nearest even size
             let size = (config.max_packet_size() + 1) & !1;
 
-            if size > eps[i].max_packet_size {
-                eps[i].max_packet_size = size;
+            if size > max_packet_size[i] {
+                max_packet_size[i] = size;
             }
 
             return Ok((unsafe { EndpointIndex::new_unchecked(i as u8) }, size));
@@ -88,7 +99,7 @@ impl<USB: UsbPeripheral> usbcore::UsbEndpointAllocator<UsbCore<USB>> for UsbEndp
 
     fn next_alt_setting(&mut self) -> Result<()> {
         for i in 0..NUM_ENDPOINTS {
-            self.ep_type_in_alt[i] = None;
+            self.eps[i].type_in_alt = None;
         }
 
         Ok(())
