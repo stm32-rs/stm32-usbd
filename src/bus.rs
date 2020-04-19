@@ -187,15 +187,17 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
                 // race conditions
                 regs.istr.write(|w| unsafe { w.bits(0xffff) }.wkup().clear_bit());
 
+                // Required by datasheet
+                regs.cntr.modify(|_, w| w.fsusp().clear_bit());
+
                 // we need to check and see the reason for the wakeup  
                 if regs.fnr.read().rxdp().bit() {
                     // spurious wakeup. We go back to sleep
+                    self.suspend();
                     PollResult::Suspend
                 } else {
                     // real wakeup
                     
-                    // Required by datasheet
-                    regs.cntr.modify(|_, w| w.fsusp().clear_bit());
                     PollResult::Resume
                 }
             } else if istr.reset().bit_is_set() {
