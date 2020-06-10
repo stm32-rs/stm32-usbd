@@ -27,10 +27,6 @@ started by [@mvirkkunen](https://github.com/mvirkkunen).
 This driver is intended for use through a device hal library.
 Such hal library should implement `UsbPeripheral` for the corresponding USB peripheral object.
 This trait declares all the peripheral properties that may vary from one device family to the other.
-Additionally, hal should pass `ram_access_1x16` of `ram_access_2x16` feature to the `stm32-usbd` library to
-define endpoint memory access scheme:
-* `ram_access_1x16` - for "1x16 bits/word" access scheme
-* `ram_access_2x16` - for "2x16 bits/word" access scheme
 
 ## Examples
 
