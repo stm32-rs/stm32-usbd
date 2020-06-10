@@ -34,6 +34,13 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     /// Endpoint memory size in bytes
     const EP_MEMORY_SIZE: usize;
 
+    #[cfg(not(any(feature = "ram_access_1x16", feature = "ram_access_2x16")))]
+    const EP_MEMORY_ACCESS_2X16: bool;
+    #[cfg(feature = "ram_access_1x16")]
+    const EP_MEMORY_ACCESS_2X16: bool = false;
+    #[cfg(feature = "ram_access_2x16")]
+    const EP_MEMORY_ACCESS_2X16: bool = true;
+
     /// Enables USB device on its peripheral bus
     fn enable();
 
