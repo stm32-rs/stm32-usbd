@@ -72,10 +72,15 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
         }
     }
 
-    pub fn offset(&self) -> usize {
+    pub fn offset(&self) -> u16 {
         let buffer_address = self.mem.as_ptr() as usize;
-        let index = (buffer_address - USB::EP_MEMORY as usize) / mem::size_of::<UsbAccessType>();
-        index << 1
+        let word_size = if USB::EP_MEMORY_ACCESS_2X16 {
+            2
+        } else {
+            4
+        };
+        let index = (buffer_address - USB::EP_MEMORY as usize) / word_size;
+        (index << 1) as u16
     }
 
     pub fn capacity(&self) -> usize {
@@ -84,11 +89,41 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
 }
 
 #[repr(C)]
-pub struct BufferDescriptor {
-    pub addr_tx: VolatileCell<UsbAccessType>,
-    pub count_tx: VolatileCell<UsbAccessType>,
-    pub addr_rx: VolatileCell<UsbAccessType>,
-    pub count_rx: VolatileCell<UsbAccessType>,
+pub struct BufferDescriptor<USB> {
+    ptr: *const VolatileCell<u16>,
+    marker: PhantomData<USB>,
+}
+
+impl<USB: UsbPeripheral> BufferDescriptor<USB> {
+    #[inline(always)]
+    fn field(&self, index: usize) -> &'static VolatileCell<u16> {
+        let mul = if USB::EP_MEMORY_ACCESS_2X16 {
+            1
+        } else {
+            2
+        };
+        unsafe { &*(self.ptr.add(index * mul)) }
+    }
+
+    #[inline(always)]
+    pub fn addr_tx(&self) -> &'static VolatileCell<u16> {
+        self.field(0)
+    }
+
+    #[inline(always)]
+    pub fn count_tx(&self) -> &'static VolatileCell<u16> {
+        self.field(1)
+    }
+
+    #[inline(always)]
+    pub fn addr_rx(&self) -> &'static VolatileCell<u16> {
+        self.field(2)
+    }
+
+    #[inline(always)]
+    pub fn count_rx(&self) -> &'static VolatileCell<u16> {
+        self.field(3)
+    }
 }
 
 pub struct EndpointMemoryAllocator<USB> {
@@ -118,7 +153,19 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
         Ok(EndpointBuffer::new(offset, size))
     }
 
-    pub fn buffer_descriptor(index: u8) -> &'static BufferDescriptor {
-        unsafe { &*(USB::EP_MEMORY as *const BufferDescriptor).offset(index as isize) }
+    pub fn buffer_descriptor(index: u8) -> BufferDescriptor<USB> {
+        let mul = if USB::EP_MEMORY_ACCESS_2X16 {
+            1
+        } else {
+            2
+        };
+
+        unsafe {
+            let ptr = (USB::EP_MEMORY as *const VolatileCell<u16>).add((index as usize) * 4 * mul);
+            BufferDescriptor {
+                ptr,
+                marker: Default::default()
+            }
+        }
     }
 }
