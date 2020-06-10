@@ -17,8 +17,8 @@ pub const NUM_ENDPOINTS: usize = 8;
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]
 pub struct Endpoint<USB> {
-    out_buf: Option<Mutex<EndpointBuffer>>,
-    in_buf: Option<Mutex<EndpointBuffer>>,
+    out_buf: Option<Mutex<EndpointBuffer<USB>>>,
+    in_buf: Option<Mutex<EndpointBuffer<USB>>>,
     ep_type: Option<EndpointType>,
     index: u8,
     _marker: PhantomData<USB>,
@@ -67,8 +67,8 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         self.out_buf.is_some()
     }
 
-    pub fn set_out_buf(&mut self, buffer: EndpointBuffer, size_bits: u16) {
-        let offset = buffer.offset::<USB>();
+    pub fn set_out_buf(&mut self, buffer: EndpointBuffer<USB>, size_bits: u16) {
+        let offset = buffer.offset();
         self.out_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
@@ -80,8 +80,8 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         self.in_buf.is_some()
     }
 
-    pub fn set_in_buf(&mut self, buffer: EndpointBuffer) {
-        let offset = buffer.offset::<USB>();
+    pub fn set_in_buf(&mut self, buffer: EndpointBuffer<USB>) {
+        let offset = buffer.offset();
         self.in_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
