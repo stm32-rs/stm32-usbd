@@ -1,40 +1,57 @@
 use crate::endpoint::NUM_ENDPOINTS;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
-use core::{mem, slice};
+use core::slice;
 use usb_device::{Result, UsbError};
 use vcell::VolatileCell;
 
-#[cfg(feature = "ram_access_1x16")]
-pub type UsbAccessType = u32;
-#[cfg(feature = "ram_access_2x16")]
-pub type UsbAccessType = u16;
 
 pub struct EndpointBuffer<USB> {
-    mem: &'static mut [VolatileCell<UsbAccessType>],
+    mem: &'static mut [VolatileCell<u16>],
     marker: PhantomData<USB>
 }
 
 impl<USB: UsbPeripheral> EndpointBuffer<USB> {
     pub fn new(offset_bytes: usize, size_bytes: usize) -> Self {
-        let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<UsbAccessType>;
+        let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<u16>;
 
-        let mem =
-            unsafe { slice::from_raw_parts_mut(ep_mem_ptr.offset((offset_bytes >> 1) as isize), size_bytes >> 1) };
-        Self {
-            mem,
-            marker: PhantomData,
+        let offset_words = offset_bytes >> 1;
+        let count_words = size_bytes >> 1;
+        let offset_u16_words;
+        let count_u16_words;
+        if USB::EP_MEMORY_ACCESS_2X16 {
+            offset_u16_words = offset_words;
+            count_u16_words = count_words;
+        } else {
+            offset_u16_words = offset_words * 2;
+            count_u16_words = count_words * 2;
+        };
+
+        unsafe {
+            let mem = slice::from_raw_parts_mut(ep_mem_ptr.add(offset_u16_words), count_u16_words);
+            Self {
+                mem,
+                marker: PhantomData,
+            }
         }
     }
 
     #[inline(always)]
     fn read_word(&self, index: usize) -> u16 {
-        (self.mem[index].get() & 0xffff) as u16
+        if USB::EP_MEMORY_ACCESS_2X16 {
+            self.mem[index].get()
+        } else {
+            self.mem[index * 2].get()
+        }
     }
 
     #[inline(always)]
     fn write_word(&self, index: usize, value: u16) {
-        self.mem[index].set(value as UsbAccessType);
+        if USB::EP_MEMORY_ACCESS_2X16 {
+            self.mem[index].set(value);
+        } else {
+            self.mem[index * 2].set(value);
+        }
     }
 
     pub fn read(&self, mut buf: &mut [u8]) {
@@ -84,7 +101,12 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
     }
 
     pub fn capacity(&self) -> usize {
-        self.mem.len() << 1
+        let len_words = if USB::EP_MEMORY_ACCESS_2X16 {
+            self.mem.len()
+        } else {
+            self.mem.len() / 2
+        };
+        len_words << 1
     }
 }
 
