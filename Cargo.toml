@@ -24,7 +24,3 @@ ram_access_2x16 = []
 
 [package.metadata.docs.rs]
 features = ["ram_access_2x16"]
-
-[[example]]
-name = "hal"
-required-features = ["ram_access_1x16"]
