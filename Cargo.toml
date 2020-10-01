@@ -21,6 +21,3 @@ stm32f1xx-hal = { version = "0.4.0", features = ["stm32f103"] }
 # USB RAM access scheme
 ram_access_1x16 = []
 ram_access_2x16 = []
-
-[package.metadata.docs.rs]
-features = ["ram_access_2x16"]
