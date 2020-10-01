@@ -33,6 +33,10 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     const EP_MEMORY_SIZE: usize;
 
     #[cfg(not(any(feature = "ram_access_1x16", feature = "ram_access_2x16")))]
+    /// Endpoint memory access scheme
+    ///
+    /// Check Reference Manual for details.
+    /// Set to `true` if "2x16 bits/word" access scheme is used, otherwise set to `false`.
     const EP_MEMORY_ACCESS_2X16: bool;
     #[cfg(feature = "ram_access_1x16")]
     const EP_MEMORY_ACCESS_2X16: bool = false;
