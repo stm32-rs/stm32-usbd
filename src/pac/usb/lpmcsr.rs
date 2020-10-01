@@ -1,356 +1,200 @@
-#[doc = r" Value read from the register"]
-pub struct R {
-    bits: u32,
-}
-#[doc = r" Value to write to the register"]
-pub struct W {
-    bits: u32,
-}
-impl super::LPMCSR {
-    #[doc = r" Modifies the contents of the register"]
-    #[inline]
-    pub fn modify<F>(&self, f: F)
-    where
-        for<'w> F: FnOnce(&R, &'w mut W) -> &'w mut W,
-    {
-        let bits = self.register.get();
-        let r = R { bits: bits };
-        let mut w = W { bits: bits };
-        f(&r, &mut w);
-        self.register.set(w.bits);
-    }
-    #[doc = r" Reads the contents of the register"]
-    #[inline]
-    pub fn read(&self) -> R {
-        R {
-            bits: self.register.get(),
-        }
-    }
-    #[doc = r" Writes to the register"]
-    #[inline]
-    pub fn write<F>(&self, f: F)
-    where
-        F: FnOnce(&mut W) -> &mut W,
-    {
-        let mut w = W::reset_value();
-        f(&mut w);
-        self.register.set(w.bits);
-    }
-    #[doc = r" Writes the reset value to the register"]
-    #[inline]
-    pub fn reset(&self) {
-        self.write(|w| w)
+#[doc = "Reader of register LPMCSR"]
+pub type R = crate::pac::generic::R<u32, super::LPMCSR>;
+#[doc = "Writer for register LPMCSR"]
+pub type W = crate::pac::generic::W<u32, super::LPMCSR>;
+#[doc = "Register LPMCSR `reset()`'s with value 0"]
+impl crate::pac::generic::ResetValue for super::LPMCSR {
+    type Type = u32;
+    #[inline(always)]
+    fn reset_value() -> Self::Type {
+        0
     }
 }
-#[doc = "Possible values of the field `LPMEN`"]
+#[doc = "LPM support enable\n\nValue on reset: 0"]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum LPMENR {
-    #[doc = "enable the LPM support within the USB device"]
-    DISABLED,
-    #[doc = "no LPM transactions are handled"]
-    ENABLED,
+pub enum LPMEN_A {
+    #[doc = "0: enable the LPM support within the USB device"]
+    DISABLED = 0,
+    #[doc = "1: no LPM transactions are handled"]
+    ENABLED = 1,
 }
-impl LPMENR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
+impl From<LPMEN_A> for bool {
+    #[inline(always)]
+    fn from(variant: LPMEN_A) -> Self {
+        variant as u8 != 0
     }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            LPMENR::DISABLED => false,
-            LPMENR::ENABLED => true,
-        }
-    }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> LPMENR {
-        match value {
-            false => LPMENR::DISABLED,
-            true => LPMENR::ENABLED,
+}
+#[doc = "Reader of field `LPMEN`"]
+pub type LPMEN_R = crate::pac::generic::R<bool, LPMEN_A>;
+impl LPMEN_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> LPMEN_A {
+        match self.bits {
+            false => LPMEN_A::DISABLED,
+            true => LPMEN_A::ENABLED,
         }
     }
     #[doc = "Checks if the value of the field is `DISABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_disabled(&self) -> bool {
-        *self == LPMENR::DISABLED
+        *self == LPMEN_A::DISABLED
     }
     #[doc = "Checks if the value of the field is `ENABLED`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_enabled(&self) -> bool {
-        *self == LPMENR::ENABLED
+        *self == LPMEN_A::ENABLED
     }
 }
-#[doc = "Possible values of the field `LPMACK`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum LPMACKR {
-    #[doc = "the valid LPM Token will be NYET"]
-    NYET,
-    #[doc = "the valid LPM Token will be ACK"]
-    ACK,
+#[doc = "Write proxy for field `LPMEN`"]
+pub struct LPMEN_W<'a> {
+    w: &'a mut W,
 }
-impl LPMACKR {
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
-    }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        match *self {
-            LPMACKR::NYET => false,
-            LPMACKR::ACK => true,
+impl<'a> LPMEN_W<'a> {
+    #[doc = r"Writes `variant` to the field"]
+    #[inline(always)]
+    pub fn variant(self, variant: LPMEN_A) -> &'a mut W {
+        {
+            self.bit(variant.into())
         }
     }
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _from(value: bool) -> LPMACKR {
-        match value {
-            false => LPMACKR::NYET,
-            true => LPMACKR::ACK,
+    #[doc = "enable the LPM support within the USB device"]
+    #[inline(always)]
+    pub fn disabled(self) -> &'a mut W {
+        self.variant(LPMEN_A::DISABLED)
+    }
+    #[doc = "no LPM transactions are handled"]
+    #[inline(always)]
+    pub fn enabled(self) -> &'a mut W {
+        self.variant(LPMEN_A::ENABLED)
+    }
+    #[doc = r"Sets the field bit"]
+    #[inline(always)]
+    pub fn set_bit(self) -> &'a mut W {
+        self.bit(true)
+    }
+    #[doc = r"Clears the field bit"]
+    #[inline(always)]
+    pub fn clear_bit(self) -> &'a mut W {
+        self.bit(false)
+    }
+    #[doc = r"Writes raw bits to the field"]
+    #[inline(always)]
+    pub fn bit(self, value: bool) -> &'a mut W {
+        self.w.bits = (self.w.bits & !0x01) | ((value as u32) & 0x01);
+        self.w
+    }
+}
+#[doc = "LPM Token acknowledge enable\n\nValue on reset: 0"]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LPMACK_A {
+    #[doc = "0: the valid LPM Token will be NYET"]
+    NYET = 0,
+    #[doc = "1: the valid LPM Token will be ACK"]
+    ACK = 1,
+}
+impl From<LPMACK_A> for bool {
+    #[inline(always)]
+    fn from(variant: LPMACK_A) -> Self {
+        variant as u8 != 0
+    }
+}
+#[doc = "Reader of field `LPMACK`"]
+pub type LPMACK_R = crate::pac::generic::R<bool, LPMACK_A>;
+impl LPMACK_R {
+    #[doc = r"Get enumerated values variant"]
+    #[inline(always)]
+    pub fn variant(&self) -> LPMACK_A {
+        match self.bits {
+            false => LPMACK_A::NYET,
+            true => LPMACK_A::ACK,
         }
     }
     #[doc = "Checks if the value of the field is `NYET`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_nyet(&self) -> bool {
-        *self == LPMACKR::NYET
+        *self == LPMACK_A::NYET
     }
     #[doc = "Checks if the value of the field is `ACK`"]
-    #[inline]
+    #[inline(always)]
     pub fn is_ack(&self) -> bool {
-        *self == LPMACKR::ACK
+        *self == LPMACK_A::ACK
     }
 }
-#[doc = r" Value of the field"]
-pub struct REMWAKER {
-    bits: bool,
-}
-impl REMWAKER {
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bit(&self) -> bool {
-        self.bits
-    }
-    #[doc = r" Returns `true` if the bit is clear (0)"]
-    #[inline]
-    pub fn bit_is_clear(&self) -> bool {
-        !self.bit()
-    }
-    #[doc = r" Returns `true` if the bit is set (1)"]
-    #[inline]
-    pub fn bit_is_set(&self) -> bool {
-        self.bit()
-    }
-}
-#[doc = r" Value of the field"]
-pub struct BESLR {
-    bits: u8,
-}
-impl BESLR {
-    #[doc = r" Value of the field as raw bits"]
-    #[inline]
-    pub fn bits(&self) -> u8 {
-        self.bits
-    }
-}
-#[doc = "Values that can be written to the field `LPMEN`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum LPMENW {
-    #[doc = "enable the LPM support within the USB device"]
-    DISABLED,
-    #[doc = "no LPM transactions are handled"]
-    ENABLED,
-}
-impl LPMENW {
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _bits(&self) -> bool {
-        match *self {
-            LPMENW::DISABLED => false,
-            LPMENW::ENABLED => true,
-        }
-    }
-}
-#[doc = r" Proxy"]
-pub struct _LPMENW<'a> {
+#[doc = "Write proxy for field `LPMACK`"]
+pub struct LPMACK_W<'a> {
     w: &'a mut W,
 }
-impl<'a> _LPMENW<'a> {
-    #[doc = r" Writes `variant` to the field"]
-    #[inline]
-    pub fn variant(self, variant: LPMENW) -> &'a mut W {
+impl<'a> LPMACK_W<'a> {
+    #[doc = r"Writes `variant` to the field"]
+    #[inline(always)]
+    pub fn variant(self, variant: LPMACK_A) -> &'a mut W {
         {
-            self.bit(variant._bits())
-        }
-    }
-    #[doc = "enable the LPM support within the USB device"]
-    #[inline]
-    pub fn disabled(self) -> &'a mut W {
-        self.variant(LPMENW::DISABLED)
-    }
-    #[doc = "no LPM transactions are handled"]
-    #[inline]
-    pub fn enabled(self) -> &'a mut W {
-        self.variant(LPMENW::ENABLED)
-    }
-    #[doc = r" Sets the field bit"]
-    pub fn set_bit(self) -> &'a mut W {
-        self.bit(true)
-    }
-    #[doc = r" Clears the field bit"]
-    pub fn clear_bit(self) -> &'a mut W {
-        self.bit(false)
-    }
-    #[doc = r" Writes raw bits to the field"]
-    #[inline]
-    pub fn bit(self, value: bool) -> &'a mut W {
-        const MASK: bool = true;
-        const OFFSET: u8 = 0;
-        self.w.bits &= !((MASK as u32) << OFFSET);
-        self.w.bits |= ((value & MASK) as u32) << OFFSET;
-        self.w
-    }
-}
-#[doc = "Values that can be written to the field `LPMACK`"]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum LPMACKW {
-    #[doc = "the valid LPM Token will be NYET"]
-    NYET,
-    #[doc = "the valid LPM Token will be ACK"]
-    ACK,
-}
-impl LPMACKW {
-    #[allow(missing_docs)]
-    #[doc(hidden)]
-    #[inline]
-    pub fn _bits(&self) -> bool {
-        match *self {
-            LPMACKW::NYET => false,
-            LPMACKW::ACK => true,
-        }
-    }
-}
-#[doc = r" Proxy"]
-pub struct _LPMACKW<'a> {
-    w: &'a mut W,
-}
-impl<'a> _LPMACKW<'a> {
-    #[doc = r" Writes `variant` to the field"]
-    #[inline]
-    pub fn variant(self, variant: LPMACKW) -> &'a mut W {
-        {
-            self.bit(variant._bits())
+            self.bit(variant.into())
         }
     }
     #[doc = "the valid LPM Token will be NYET"]
-    #[inline]
+    #[inline(always)]
     pub fn nyet(self) -> &'a mut W {
-        self.variant(LPMACKW::NYET)
+        self.variant(LPMACK_A::NYET)
     }
     #[doc = "the valid LPM Token will be ACK"]
-    #[inline]
+    #[inline(always)]
     pub fn ack(self) -> &'a mut W {
-        self.variant(LPMACKW::ACK)
+        self.variant(LPMACK_A::ACK)
     }
-    #[doc = r" Sets the field bit"]
+    #[doc = r"Sets the field bit"]
+    #[inline(always)]
     pub fn set_bit(self) -> &'a mut W {
         self.bit(true)
     }
-    #[doc = r" Clears the field bit"]
+    #[doc = r"Clears the field bit"]
+    #[inline(always)]
     pub fn clear_bit(self) -> &'a mut W {
         self.bit(false)
     }
-    #[doc = r" Writes raw bits to the field"]
-    #[inline]
+    #[doc = r"Writes raw bits to the field"]
+    #[inline(always)]
     pub fn bit(self, value: bool) -> &'a mut W {
-        const MASK: bool = true;
-        const OFFSET: u8 = 1;
-        self.w.bits &= !((MASK as u32) << OFFSET);
-        self.w.bits |= ((value & MASK) as u32) << OFFSET;
+        self.w.bits = (self.w.bits & !(0x01 << 1)) | (((value as u32) & 0x01) << 1);
         self.w
     }
 }
+#[doc = "Reader of field `REMWAKE`"]
+pub type REMWAKE_R = crate::pac::generic::R<bool, bool>;
+#[doc = "Reader of field `BESL`"]
+pub type BESL_R = crate::pac::generic::R<u8, u8>;
 impl R {
-    #[doc = r" Value of the register as raw bits"]
-    #[inline]
-    pub fn bits(&self) -> u32 {
-        self.bits
-    }
     #[doc = "Bit 0 - LPM support enable"]
-    #[inline]
-    pub fn lpmen(&self) -> LPMENR {
-        LPMENR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 0;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[inline(always)]
+    pub fn lpmen(&self) -> LPMEN_R {
+        LPMEN_R::new((self.bits & 0x01) != 0)
     }
     #[doc = "Bit 1 - LPM Token acknowledge enable"]
-    #[inline]
-    pub fn lpmack(&self) -> LPMACKR {
-        LPMACKR::_from({
-            const MASK: bool = true;
-            const OFFSET: u8 = 1;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        })
+    #[inline(always)]
+    pub fn lpmack(&self) -> LPMACK_R {
+        LPMACK_R::new(((self.bits >> 1) & 0x01) != 0)
     }
     #[doc = "Bit 3 - bRemoteWake value"]
-    #[inline]
-    pub fn remwake(&self) -> REMWAKER {
-        let bits = {
-            const MASK: bool = true;
-            const OFFSET: u8 = 3;
-            ((self.bits >> OFFSET) & MASK as u32) != 0
-        };
-        REMWAKER { bits }
+    #[inline(always)]
+    pub fn remwake(&self) -> REMWAKE_R {
+        REMWAKE_R::new(((self.bits >> 3) & 0x01) != 0)
     }
     #[doc = "Bits 4:7 - BESL value"]
-    #[inline]
-    pub fn besl(&self) -> BESLR {
-        let bits = {
-            const MASK: u8 = 15;
-            const OFFSET: u8 = 4;
-            ((self.bits >> OFFSET) & MASK as u32) as u8
-        };
-        BESLR { bits }
+    #[inline(always)]
+    pub fn besl(&self) -> BESL_R {
+        BESL_R::new(((self.bits >> 4) & 0x0f) as u8)
     }
 }
 impl W {
-    #[doc = r" Reset value of the register"]
-    #[inline]
-    pub fn reset_value() -> W {
-        W { bits: 0 }
-    }
-    #[doc = r" Writes raw bits to the register"]
-    #[inline]
-    pub unsafe fn bits(&mut self, bits: u32) -> &mut Self {
-        self.bits = bits;
-        self
-    }
     #[doc = "Bit 0 - LPM support enable"]
-    #[inline]
-    pub fn lpmen(&mut self) -> _LPMENW {
-        _LPMENW { w: self }
+    #[inline(always)]
+    pub fn lpmen(&mut self) -> LPMEN_W {
+        LPMEN_W { w: self }
     }
     #[doc = "Bit 1 - LPM Token acknowledge enable"]
-    #[inline]
-    pub fn lpmack(&mut self) -> _LPMACKW {
-        _LPMACKW { w: self }
+    #[inline(always)]
+    pub fn lpmack(&mut self) -> LPMACK_W {
+        LPMACK_W { w: self }
     }
 }
