@@ -1,34 +1,56 @@
 use crate::endpoint::NUM_ENDPOINTS;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
-use core::{mem, slice};
+use core::slice;
 use usb_device::{Result, UsbError};
 use vcell::VolatileCell;
 
-#[cfg(feature = "ram_access_1x16")]
-pub type UsbAccessType = u32;
-#[cfg(feature = "ram_access_2x16")]
-pub type UsbAccessType = u16;
+pub struct EndpointBuffer<USB> {
+    mem: &'static mut [VolatileCell<u16>],
+    marker: PhantomData<USB>,
+}
 
-pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
+impl<USB: UsbPeripheral> EndpointBuffer<USB> {
+    pub fn new(offset_bytes: usize, size_bytes: usize) -> Self {
+        let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<u16>;
 
-impl EndpointBuffer {
-    pub fn new<USB: UsbPeripheral>(offset_bytes: usize, size_bytes: usize) -> Self {
-        let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<UsbAccessType>;
+        let offset_words = offset_bytes >> 1;
+        let count_words = size_bytes >> 1;
+        let offset_u16_words;
+        let count_u16_words;
+        if USB::EP_MEMORY_ACCESS_2X16 {
+            offset_u16_words = offset_words;
+            count_u16_words = count_words;
+        } else {
+            offset_u16_words = offset_words * 2;
+            count_u16_words = count_words * 2;
+        };
 
-        let mem =
-            unsafe { slice::from_raw_parts_mut(ep_mem_ptr.offset((offset_bytes >> 1) as isize), size_bytes >> 1) };
-        Self(mem)
+        unsafe {
+            let mem = slice::from_raw_parts_mut(ep_mem_ptr.add(offset_u16_words), count_u16_words);
+            Self {
+                mem,
+                marker: PhantomData,
+            }
+        }
     }
 
     #[inline(always)]
     fn read_word(&self, index: usize) -> u16 {
-        (self.0[index].get() & 0xffff) as u16
+        if USB::EP_MEMORY_ACCESS_2X16 {
+            self.mem[index].get()
+        } else {
+            self.mem[index * 2].get()
+        }
     }
 
     #[inline(always)]
     fn write_word(&self, index: usize, value: u16) {
-        self.0[index].set(value as UsbAccessType);
+        if USB::EP_MEMORY_ACCESS_2X16 {
+            self.mem[index].set(value);
+        } else {
+            self.mem[index * 2].set(value);
+        }
     }
 
     pub fn read(&self, mut buf: &mut [u8]) {
@@ -66,23 +88,55 @@ impl EndpointBuffer {
         }
     }
 
-    pub fn offset<USB: UsbPeripheral>(&self) -> usize {
-        let buffer_address = self.0.as_ptr() as usize;
-        let index = (buffer_address - USB::EP_MEMORY as usize) / mem::size_of::<UsbAccessType>();
-        index << 1
+    pub fn offset(&self) -> u16 {
+        let buffer_address = self.mem.as_ptr() as usize;
+        let word_size = if USB::EP_MEMORY_ACCESS_2X16 { 2 } else { 4 };
+        let index = (buffer_address - USB::EP_MEMORY as usize) / word_size;
+        (index << 1) as u16
     }
 
     pub fn capacity(&self) -> usize {
-        self.0.len() << 1
+        let len_words = if USB::EP_MEMORY_ACCESS_2X16 {
+            self.mem.len()
+        } else {
+            self.mem.len() / 2
+        };
+        len_words << 1
     }
 }
 
 #[repr(C)]
-pub struct BufferDescriptor {
-    pub addr_tx: VolatileCell<UsbAccessType>,
-    pub count_tx: VolatileCell<UsbAccessType>,
-    pub addr_rx: VolatileCell<UsbAccessType>,
-    pub count_rx: VolatileCell<UsbAccessType>,
+pub struct BufferDescriptor<USB> {
+    ptr: *const VolatileCell<u16>,
+    marker: PhantomData<USB>,
+}
+
+impl<USB: UsbPeripheral> BufferDescriptor<USB> {
+    #[inline(always)]
+    fn field(&self, index: usize) -> &'static VolatileCell<u16> {
+        let mul = if USB::EP_MEMORY_ACCESS_2X16 { 1 } else { 2 };
+        unsafe { &*(self.ptr.add(index * mul)) }
+    }
+
+    #[inline(always)]
+    pub fn addr_tx(&self) -> &'static VolatileCell<u16> {
+        self.field(0)
+    }
+
+    #[inline(always)]
+    pub fn count_tx(&self) -> &'static VolatileCell<u16> {
+        self.field(1)
+    }
+
+    #[inline(always)]
+    pub fn addr_rx(&self) -> &'static VolatileCell<u16> {
+        self.field(2)
+    }
+
+    #[inline(always)]
+    pub fn count_rx(&self) -> &'static VolatileCell<u16> {
+        self.field(3)
+    }
 }
 
 pub struct EndpointMemoryAllocator<USB> {
@@ -98,7 +152,7 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
         }
     }
 
-    pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
+    pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer<USB>> {
         assert_eq!(size & 1, 0);
         assert!(size < USB::EP_MEMORY_SIZE);
 
@@ -109,10 +163,18 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
 
         self.next_free_offset += size;
 
-        Ok(EndpointBuffer::new::<USB>(offset, size))
+        Ok(EndpointBuffer::new(offset, size))
     }
 
-    pub fn buffer_descriptor(index: u8) -> &'static BufferDescriptor {
-        unsafe { &*(USB::EP_MEMORY as *const BufferDescriptor).offset(index as isize) }
+    pub fn buffer_descriptor(index: u8) -> BufferDescriptor<USB> {
+        let mul = if USB::EP_MEMORY_ACCESS_2X16 { 1 } else { 2 };
+
+        unsafe {
+            let ptr = (USB::EP_MEMORY as *const VolatileCell<u16>).add((index as usize) * 4 * mul);
+            BufferDescriptor {
+                ptr,
+                marker: Default::default(),
+            }
+        }
     }
 }

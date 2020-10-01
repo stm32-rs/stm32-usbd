@@ -20,6 +20,7 @@ unsafe impl UsbPeripheral for Peripheral {
     const DP_PULL_UP_FEATURE: bool = false;
     const EP_MEMORY: *const () = 0x4000_6000 as _;
     const EP_MEMORY_SIZE: usize = 512;
+    const EP_MEMORY_ACCESS_2X16: bool = false;
 
     fn enable() {
         let rcc = unsafe { &*RCC::ptr() };
