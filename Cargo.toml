@@ -1,6 +1,6 @@
 [package]
 name = "stm32-usbd"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2018"
 authors = ["Matti Virkkunen <mvirkkunen@gmail.com>", "Vadim Kaushan <admin@disasm.info>", "Nicolas Stalder <n@stalder.io>", "Jonas Martin <lichtfeind@gmail.com>"]
 description = "'usb-device' implementation for STM32 microcontrollers"
@@ -15,9 +15,4 @@ cortex-m = "0.7.1"
 usb-device = "0.2.3"
 
 [dev-dependencies]
-stm32f1xx-hal = { version = "0.4.0", features = ["stm32f103"] }
-
-[features]
-# USB RAM access scheme
-ram_access_1x16 = []
-ram_access_2x16 = []
+stm32f1xx-hal = { version = "0.7.0", features = ["stm32f103"] }

@@ -1,6 +1,6 @@
 [![crates.io](https://img.shields.io/crates/d/stm32-usbd.svg)](https://crates.io/crates/stm32-usbd)
 [![crates.io](https://img.shields.io/crates/v/stm32-usbd.svg)](https://crates.io/crates/stm32-usbd)
-[![Build Status](https://travis-ci.org/stm32-rs/stm32-usbd.svg?branch=master)](https://travis-ci.org/stm32-rs/stm32-usbd)
+![Build Status](https://github.com/stm32-rs/stm32-usbd/workflows/CI/badge.svg)
 
 # `stm32-usbd`
 
