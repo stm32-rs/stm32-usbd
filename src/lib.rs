@@ -5,9 +5,6 @@
 
 #![no_std]
 
-#[cfg(all(feature = "ram_access_1x16", feature = "ram_access_2x16"))]
-compile_error!("Multiple ram_access features are specified. Only a single feature can be specified.");
-
 pub mod bus;
 mod endpoint;
 mod endpoint_memory;
@@ -32,16 +29,11 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     /// Endpoint memory size in bytes
     const EP_MEMORY_SIZE: usize;
 
-    #[cfg(not(any(feature = "ram_access_1x16", feature = "ram_access_2x16")))]
     /// Endpoint memory access scheme
     ///
     /// Check Reference Manual for details.
     /// Set to `true` if "2x16 bits/word" access scheme is used, otherwise set to `false`.
     const EP_MEMORY_ACCESS_2X16: bool;
-    #[cfg(feature = "ram_access_1x16")]
-    const EP_MEMORY_ACCESS_2X16: bool = false;
-    #[cfg(feature = "ram_access_2x16")]
-    const EP_MEMORY_ACCESS_2X16: bool = true;
 
     /// Enables USB device on its peripheral bus
     fn enable();
