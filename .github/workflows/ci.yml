@@ -1,0 +1,32 @@
+on:
+  push:
+    branches: [ staging, trying, master ]
+  pull_request:
+
+name: CI
+
+jobs:
+  ci-linux:
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      matrix:
+        rust: [stable, nightly]
+        include:
+          # Nightly is only for reference and allowed to fail
+          - rust: nightly
+            experimental: true
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Check code
+        run: cargo check
+
+      - name: Check examples
+        run: cargo check --examples
