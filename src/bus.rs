@@ -92,6 +92,23 @@ impl<USB: UsbPeripheral> UsbBus<USB> {
             }
         })
     }
+
+    /// Set/clear remote wakeup bit
+    ///
+    /// Allows to modify CNTR.RESUME bit from device to perform remote wake up from suspend
+    /// (e.g. on keyboard/mouse input). To perform remote wake up: when a condition is met
+    /// during suspend mode, use this method with `true` to set the RESUME bit. Then, after
+    /// waiting between 1-15 ms (see reference manual) call it again with `false` to clear
+    /// the bit.
+    ///
+    /// This method will not set the bit if device is not suspended because performing remote
+    /// wake up in other mode is invalid and host will most likely disable such a device.
+    pub fn remote_wakeup(&self, resume: bool) {
+        interrupt::free(|cs| {
+            self.regs.borrow(cs)
+                .cntr.modify(|r, w| w.resume().bit(resume && r.fsusp().is_suspend()));
+        })
+    }
 }
 
 impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
