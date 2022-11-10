@@ -218,10 +218,7 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
 
                     if v.ctr_tx().bit_is_set() {
                         ep_in_complete |= bit;
-
-                        interrupt::free(|cs| {
-                            ep.clear_ctr_tx(cs);
-                        });
+                        ep.clear_ctr_tx(cs);
                     }
 
                     bit <<= 1;
