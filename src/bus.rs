@@ -71,6 +71,27 @@ impl<USB: UsbPeripheral> UsbBus<USB> {
             regs.cntr.modify(|_, w| w.pdwn().bit(pdwn));
         });
     }
+
+    /// Enter suspend low-power mode
+    ///
+    /// This should be used when in suspend mode if low-power mode needs to be entered during
+    /// suspend (bus-powered device). Application should call this when it is ready to decrease
+    /// power consumption to meet power consumption requirements of the USB suspend condition
+    /// (e.g. disable system clocks or reduce their frequency). When wake up event is received
+    /// low power mode will be automatically disabled.
+    ///
+    /// Will not enter low-power mode if not in suspend state. Returns `true` if entered.
+    pub fn suspend_low_power_mode(&self) -> bool {
+        interrupt::free(|cs| {
+            let regs = self.regs.borrow(cs);
+            if regs.cntr.read().fsusp().is_suspend() {
+                regs.cntr.modify(|_, w| w.lpmode().set_bit());
+                true
+            } else {
+                false
+            }
+        })
+    }
 }
 
 impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
@@ -285,7 +306,7 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
             self.regs
                 .borrow(cs)
                 .cntr
-                .modify(|_, w| w.fsusp().set_bit().lpmode().set_bit());
+                .modify(|_, w| w.fsusp().set_bit());
         });
     }
 
