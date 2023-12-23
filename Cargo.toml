@@ -12,7 +12,7 @@ keywords = ["no-std", "embedded", "usb"]
 [dependencies]
 vcell = "0.1.2"
 cortex-m = "0.7.1"
-usb-device = "0.2.3"
+usb-device = "0.3.1"
 
 [dev-dependencies]
 stm32f1xx-hal = { version = "0.7.0", features = ["stm32f103"] }
