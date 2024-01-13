@@ -30,6 +30,10 @@ This trait declares all the peripheral properties that may vary from one device 
 
 ## Examples
 
-See the [stm32-usbd-examples](https://github.com/stm32-rs/stm32-usbd-examples) repo for different device-specific examples.
+Example applications may be found in the individual device HALs:
 
-See the `hal` example for the reference hal implementation.
+- [stm32f0xx-hal USB Serial](https://github.com/stm32-rs/stm32f0xx-hal/blob/master/examples/usb_serial.rs)
+- [stm32f1xx-hal USB Serial](https://github.com/stm32-rs/stm32f1xx-hal/blob/master/examples/usb_serial.rs)
+- [stm32f3xx-hal USB Serial](https://github.com/stm32-rs/stm32f3xx-hal/blob/master/examples/usb_serial.rs)
+- [stm32l0xx-hal USB Serial](https://github.com/stm32-rs/stm32l0xx-hal/blob/master/examples/usb_serial.rs)
+- [stm32l4xx-hal USB Serial](https://github.com/stm32-rs/stm32l4xx-hal/blob/master/examples/usb_serial.rs)
