@@ -237,7 +237,8 @@ trait EndpointTypeExt {
 impl EndpointTypeExt for EndpointType {
     fn bits(self) -> u8 {
         const BITS: [u8; 4] = [0b01, 0b10, 0b00, 0b11];
-        return BITS[self as usize];
+        let transfer_type = self.to_bm_attributes() & 0b11;
+        return BITS[transfer_type as usize];
     }
 }
 
