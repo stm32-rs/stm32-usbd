@@ -12,7 +12,7 @@ use crate::registers::UsbRegisters;
 use crate::UsbPeripheral;
 
 /// USB peripheral driver for STM32 microcontrollers.
-pub struct UsbBus<USB> {
+pub struct UsbBus<USB: UsbPeripheral> {
     peripheral: USB,
     regs: Mutex<UsbRegisters<USB>>,
     endpoints: [Endpoint<USB>; NUM_ENDPOINTS],

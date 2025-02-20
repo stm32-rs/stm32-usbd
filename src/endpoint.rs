@@ -16,7 +16,7 @@ pub const NUM_ENDPOINTS: usize = 8;
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]
-pub struct Endpoint<USB> {
+pub struct Endpoint<USB: UsbPeripheral> {
     out_buf: Option<Mutex<EndpointBuffer<USB>>>,
     in_buf: Option<Mutex<EndpointBuffer<USB>>>,
     ep_type: Option<EndpointType>,
@@ -72,8 +72,8 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         self.out_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
-        descr.addr_rx().set(offset);
-        descr.count_rx().set(size_bits);
+        descr.addr_rx().set(offset.into());
+        descr.count_rx().set(size_bits.into());
     }
 
     pub fn is_in_buf_set(&self) -> bool {
@@ -85,8 +85,8 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         self.in_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
-        descr.addr_tx().set(offset);
-        descr.count_tx().set(0);
+        descr.addr_tx().set(offset.into());
+        descr.count_tx().set(0.into());
     }
 
     fn descr(&self) -> BufferDescriptor<USB> {
@@ -151,7 +151,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
             };
 
             in_buf.write(buf);
-            self.descr().count_tx().set(buf.len() as u16);
+            self.descr().count_tx().set((buf.len() as u16).into());
 
             self.set_stat_tx(cs, EndpointStatus::Valid);
 
@@ -173,7 +173,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
 
             self.clear_ctr_rx(cs);
 
-            let count = (self.descr().count_rx().get() & 0x3ff) as usize;
+            let count = (self.descr().count_rx().get().into() & 0x3ff) as usize;
             if count > buf.len() {
                 return Err(UsbError::BufferOverflow);
             }

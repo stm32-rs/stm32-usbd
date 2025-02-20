@@ -35,6 +35,8 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     /// Set to `true` if "2x16 bits/word" access scheme is used, otherwise set to `false`.
     const EP_MEMORY_ACCESS_2X16: bool;
 
+    type Word: Word;
+
     /// Enables USB device on its peripheral bus
     fn enable();
 
@@ -43,4 +45,42 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     /// This function is called in `UsbBus::enable()` after deasserting the `pdwn` bit and before
     /// peripheral initialization.
     fn startup_delay();
+}
+
+pub trait Word: From<u16> + Into<u32> + Copy + Send + 'static
+{
+    fn from_iter_le<'a>(it: &mut impl Iterator<Item = &'a u8>) -> Self;
+    fn write_to_iter_le<'a>(self, it: &mut impl Iterator<Item = &'a mut u8>);
+}
+
+impl Word for u16 {
+    fn from_iter_le<'a>(it: &mut impl Iterator<Item = &'a u8>) -> Self {
+        Self::from_le_bytes([
+            *it.next().unwrap_or(&0),
+            *it.next().unwrap_or(&0),
+        ])
+    }
+
+    fn write_to_iter_le<'a>(self, it: &mut impl Iterator<Item = &'a mut u8>) {
+        for (w, r) in it.zip(self.to_le_bytes()) {
+            *w = r;
+        }
+    }
+}
+
+impl Word for u32 {
+    fn from_iter_le<'a>(it: &mut impl Iterator<Item = &'a u8>) -> Self {
+        Self::from_le_bytes([
+            *it.next().unwrap_or(&0),
+            *it.next().unwrap_or(&0),
+            *it.next().unwrap_or(&0),
+            *it.next().unwrap_or(&0),
+        ])
+    }
+
+    fn write_to_iter_le<'a>(self, it: &mut impl Iterator<Item = &'a mut u8>) {
+        for (w, r) in it.zip(self.to_le_bytes()) {
+            *w = r;
+        }
+    }
 }
