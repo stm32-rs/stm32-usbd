@@ -1,4 +1,4 @@
-use crate::endpoint_memory::{BufferDescriptor, EndpointBuffer, EndpointMemoryAllocator};
+use crate::endpoint_memory::{BufferDescriptor, DescriptorPart, EndpointBuffer, EndpointMemoryAllocator};
 use crate::registers::UsbRegisters;
 use crate::UsbPeripheral;
 use core::marker::PhantomData;
@@ -72,8 +72,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         self.out_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
-        descr.addr_rx().set(offset.into());
-        descr.count_rx().set(size_bits.into());
+        descr.set_rx(offset, size_bits);
     }
 
     pub fn is_in_buf_set(&self) -> bool {
@@ -85,8 +84,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
         self.in_buf = Some(Mutex::new(buffer));
 
         let descr = self.descr();
-        descr.addr_tx().set(offset.into());
-        descr.count_tx().set(0.into());
+        descr.set_tx(offset, 0);
     }
 
     fn descr(&self) -> BufferDescriptor<USB> {
@@ -151,7 +149,8 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
             };
 
             in_buf.write(buf);
-            self.descr().count_tx().set((buf.len() as u16).into());
+            let DescriptorPart { address, count: _ } = self.descr().get_tx();
+            self.descr().set_tx(address, buf.len() as u16);
 
             self.set_stat_tx(cs, EndpointStatus::Valid);
 
@@ -173,7 +172,7 @@ impl<USB: UsbPeripheral> Endpoint<USB> {
 
             self.clear_ctr_rx(cs);
 
-            let count = (self.descr().count_rx().get().into() & 0x3ff) as usize;
+            let count = (self.descr().get_rx().count & 0x3ff) as usize;
             if count > buf.len() {
                 return Err(UsbError::BufferOverflow);
             }

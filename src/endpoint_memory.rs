@@ -1,55 +1,55 @@
 use crate::endpoint::NUM_ENDPOINTS;
-use crate::{UsbPeripheral, Word};
+use crate::{SramAccessScheme, UsbPeripheral, Word};
 use core::marker::PhantomData;
-use core::slice;
+use core::mem;
 use usb_device::{Result, UsbError};
-use vcell::VolatileCell;
 
 pub struct EndpointBuffer<USB: UsbPeripheral> {
-    mem: &'static mut [VolatileCell<USB::Word>],
+    ptr: *mut <USB::SramAccessScheme as SramAccessScheme>::Word,
+    word_count: usize,
     marker: PhantomData<USB>,
 }
 
+unsafe impl<USB: UsbPeripheral> Send for EndpointBuffer<USB> {}
+
 impl<USB: UsbPeripheral> EndpointBuffer<USB> {
     pub fn new(offset_bytes: usize, size_bytes: usize) -> Self {
-        let ep_mem_ptr = USB::EP_MEMORY as *mut VolatileCell<_>;
+        let ep_mem_ptr = USB::EP_MEMORY as *mut <USB::SramAccessScheme as SramAccessScheme>::Word;
 
-        let offset_words = offset_bytes >> 1;
-        let count_words = size_bytes >> 1;
-        let offset_u16_words;
-        let count_u16_words;
-        if USB::EP_MEMORY_ACCESS_2X16 {
-            offset_u16_words = offset_words;
-            count_u16_words = count_words;
-        } else {
-            offset_u16_words = offset_words * 2;
-            count_u16_words = count_words * 2;
-        };
+        let word_size = Self::word_size();
+        let offset_words = offset_bytes / word_size;
+        let word_count = size_bytes / word_size;
+
+        let offset_words = offset_words * USB::SramAccessScheme::ADDRESS_MULTIPLIER;
+        let word_count = word_count * USB::SramAccessScheme::ADDRESS_MULTIPLIER;
 
         unsafe {
-            let mem = slice::from_raw_parts_mut(ep_mem_ptr.add(offset_u16_words), count_u16_words);
+            let ptr = ep_mem_ptr.add(offset_words);
             Self {
-                mem,
+                ptr,
+                word_count,
                 marker: PhantomData,
             }
         }
     }
 
-    #[inline(always)]
-    fn read_word(&self, index: usize) -> USB::Word {
-        if USB::EP_MEMORY_ACCESS_2X16 {
-            self.mem[index].get()
-        } else {
-            self.mem[index * 2].get()
-        }
+    fn word_size() -> usize {
+        mem::size_of::<<USB::SramAccessScheme as SramAccessScheme>::Word>()
     }
 
     #[inline(always)]
-    fn write_word(&self, index: usize, value: USB::Word) {
-        if USB::EP_MEMORY_ACCESS_2X16 {
-            self.mem[index].set(value);
-        } else {
-            self.mem[index * 2].set(value);
+    fn read_word(&self, index: usize) -> <USB::SramAccessScheme as SramAccessScheme>::Word {
+        let index = index * USB::SramAccessScheme::ADDRESS_MULTIPLIER;
+        assert!(index < self.word_count);
+        unsafe { self.ptr.add(index).read_volatile() }
+    }
+
+    #[inline(always)]
+    fn write_word(&self, index: usize, value: <USB::SramAccessScheme as SramAccessScheme>::Word) {
+        let index = index * USB::SramAccessScheme::ADDRESS_MULTIPLIER;
+        assert!(index < self.word_count);
+        unsafe {
+            self.ptr.add(index).write_volatile(value);
         }
     }
 
@@ -75,45 +75,57 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
     }
 
     pub fn offset(&self) -> u16 {
-        let buffer_address = self.mem.as_ptr() as usize;
-        let word_size = if USB::EP_MEMORY_ACCESS_2X16 { 2 } else { 4 };
-        let index = (buffer_address - USB::EP_MEMORY as usize) / word_size;
-        (index << 1) as u16
+        let buffer_address = self.ptr as usize;
+        let word_size = Self::word_size();
+        let offset_per_word = word_size * USB::SramAccessScheme::ADDRESS_MULTIPLIER;
+        let index = (buffer_address - USB::EP_MEMORY as usize) / offset_per_word;
+        (index * word_size) as u16
     }
 
+    /// Capacity in bytes
     pub fn capacity(&self) -> usize {
-        let len_words = if USB::EP_MEMORY_ACCESS_2X16 {
-            self.mem.len()
-        } else {
-            self.mem.len() / 2
-        };
-        len_words << 1
+        let len_words = self.word_count / USB::SramAccessScheme::ADDRESS_MULTIPLIER;
+        let word_size = Self::word_size();
+        len_words * word_size
     }
 }
 
 #[repr(C)]
 pub struct BufferDescriptor<USB: UsbPeripheral> {
-    ptr: *const VolatileCell<USB::Word>,
+    ptr: *mut <USB::SramAccessScheme as SramAccessScheme>::Word,
     marker: PhantomData<USB>,
+}
+
+pub struct DescriptorPart {
+    pub address: u16,
+    pub count: u16,
 }
 
 impl<USB: UsbPeripheral> BufferDescriptor<USB> {
     #[inline(always)]
-    fn field(&self, index: usize) -> &'static VolatileCell<USB::Word> {
-        let mul = if USB::EP_MEMORY_ACCESS_2X16 { 1 } else { 2 };
-        unsafe { &*(self.ptr.add(index * mul)) }
-    }
-
-    #[inline(always)]
     pub fn set_tx(&self, address: u16, count: u16) {
-        self.field(0) // addr
-        self.field(1) // count (msb in 32bit)
+        unsafe {
+            USB::SramAccessScheme::set(self.ptr, crate::AccessType::Tx, address, count);
+        }
     }
 
     #[inline(always)]
-    pub fn get_rx(&self) -> (u16, u16) {
-        self.field(2) // addr
-        self.field(3) // count(msb in 32bit)
+    pub fn get_tx(&self) -> DescriptorPart {
+        let (address, count) = unsafe { USB::SramAccessScheme::read(self.ptr, crate::AccessType::Tx) };
+        DescriptorPart { address, count }
+    }
+
+    #[inline(always)]
+    pub fn set_rx(&self, address: u16, count: u16) {
+        unsafe {
+            USB::SramAccessScheme::set(self.ptr, crate::AccessType::Rx, address, count);
+        }
+    }
+
+    #[inline(always)]
+    pub fn get_rx(&self) -> DescriptorPart {
+        let (address, count) = unsafe { USB::SramAccessScheme::read(self.ptr, crate::AccessType::Rx) };
+        DescriptorPart { address, count }
     }
 }
 
@@ -145,10 +157,15 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
     }
 
     pub fn buffer_descriptor(index: u8) -> BufferDescriptor<USB> {
-        let mul = if USB::EP_MEMORY_ACCESS_2X16 { 1 } else { 2 };
+        let mul = USB::SramAccessScheme::ADDRESS_MULTIPLIER;
+        let word_size = mem::size_of::<<USB::SramAccessScheme as SramAccessScheme>::Word>();
 
+        // 4xu16=8Bytes worth of data per descriptor
+        let descriptor_size_bytes = 8;
+        let offset_per_descriptor = descriptor_size_bytes * mul / word_size;
         unsafe {
-            let ptr = (USB::EP_MEMORY as *const VolatileCell<USB::Word>).add((index as usize) * 4 * mul);
+            let ptr = (USB::EP_MEMORY as *mut <USB::SramAccessScheme as SramAccessScheme>::Word)
+                .add((index as usize) * offset_per_descriptor);
             BufferDescriptor {
                 ptr,
                 marker: Default::default(),

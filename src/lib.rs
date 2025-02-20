@@ -9,6 +9,7 @@ pub mod bus;
 mod endpoint;
 mod endpoint_memory;
 mod registers;
+
 pub use crate::bus::UsbBus;
 
 mod pac;
@@ -32,10 +33,11 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     /// Endpoint memory access scheme
     ///
     /// Check Reference Manual for details.
-    /// Set to `true` if "2x16 bits/word" access scheme is used, otherwise set to `false`.
-    const EP_MEMORY_ACCESS_2X16: bool;
-
-    type Word: Word;
+    /// Can be any of:
+    /// * U16Bits
+    /// * U16BitsX2
+    /// * U32Bits
+    type SramAccessScheme: SramAccessScheme;
 
     /// Enables USB device on its peripheral bus
     fn enable();
@@ -47,18 +49,82 @@ pub unsafe trait UsbPeripheral: Send + Sync {
     fn startup_delay();
 }
 
-pub trait Word: From<u16> + Into<u32> + Copy + Send + 'static
-{
+pub struct U16Bits;
+pub struct U16BitsX2;
+pub struct U32Bits;
+
+pub enum AccessType {
+    Tx = 0,
+    Rx = 1,
+}
+
+pub trait SramAccessScheme {
+    type Word: Word;
+    const ADDRESS_MULTIPLIER: usize = 1;
+
+    unsafe fn set(ptr: *mut Self::Word, t: AccessType, address: u16, count: u16);
+    unsafe fn read(ptr: *const Self::Word, t: AccessType) -> (u16, u16);
+}
+
+impl SramAccessScheme for U16Bits {
+    type Word = u16;
+    const ADDRESS_MULTIPLIER: usize = 2;
+
+    unsafe fn set(ptr: *mut Self::Word, t: AccessType, address: u16, count: u16) {
+        set(ptr, t, Self::ADDRESS_MULTIPLIER, address, count);
+    }
+
+    unsafe fn read(ptr: *const Self::Word, t: AccessType) -> (u16, u16) {
+        read(ptr, t, Self::ADDRESS_MULTIPLIER)
+    }
+}
+
+impl SramAccessScheme for U16BitsX2 {
+    type Word = u16;
+
+    unsafe fn set(ptr: *mut Self::Word, t: AccessType, address: u16, count: u16) {
+        set(ptr, t, Self::ADDRESS_MULTIPLIER, address, count);
+    }
+
+    unsafe fn read(ptr: *const Self::Word, t: AccessType) -> (u16, u16) {
+        read(ptr, t, Self::ADDRESS_MULTIPLIER)
+    }
+}
+impl SramAccessScheme for U32Bits {
+    type Word = u32;
+
+    unsafe fn set(ptr: *mut Self::Word, t: AccessType, address: u16, count: u16) {
+        assert!(count < (1 << 10));
+
+        let offset = t as usize;
+
+        let bits = u32::from(count) << 16 | u32::from(address);
+        unsafe {
+            ptr.add(offset).write_volatile(bits);
+        }
+    }
+
+    unsafe fn read(ptr: *const Self::Word, t: AccessType) -> (u16, u16) {
+        let offset = t as usize;
+
+        unsafe {
+            let bits = ptr.add(offset).read_volatile();
+            let address = bits as u16;
+            let count = (bits >> 16) as u16;
+
+            (address, count)
+        }
+    }
+}
+
+pub trait Word: From<u16> + Into<u32> + Copy + Send + 'static {
     fn from_iter_le<'a>(it: &mut impl Iterator<Item = &'a u8>) -> Self;
     fn write_to_iter_le<'a>(self, it: &mut impl Iterator<Item = &'a mut u8>);
 }
 
 impl Word for u16 {
     fn from_iter_le<'a>(it: &mut impl Iterator<Item = &'a u8>) -> Self {
-        Self::from_le_bytes([
-            *it.next().unwrap_or(&0),
-            *it.next().unwrap_or(&0),
-        ])
+        Self::from_le_bytes([*it.next().unwrap_or(&0), *it.next().unwrap_or(&0)])
     }
 
     fn write_to_iter_le<'a>(self, it: &mut impl Iterator<Item = &'a mut u8>) {
@@ -82,5 +148,27 @@ impl Word for u32 {
         for (w, r) in it.zip(self.to_le_bytes()) {
             *w = r;
         }
+    }
+}
+
+fn set(ptr: *mut u16, t: AccessType, mul: usize, address: u16, count: u16) {
+    assert!(count < (1 << 10));
+
+    let offset = t as usize;
+
+    unsafe {
+        ptr.add(offset * mul).write_volatile(address);
+        ptr.add((offset + 1) * mul).write_volatile(count);
+    }
+}
+
+fn read(ptr: *const u16, t: AccessType, mul: usize) -> (u16, u16) {
+    let offset = t as usize;
+
+    unsafe {
+        let address = ptr.add(offset * mul).read_volatile();
+        let count = ptr.add((offset + 1) * mul).read_volatile();
+
+        (address, count)
     }
 }

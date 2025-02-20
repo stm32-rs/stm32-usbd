@@ -1,6 +1,6 @@
 //! USB peripheral
 
-use stm32_usbd::UsbPeripheral;
+use stm32_usbd::{U16Bits, UsbPeripheral};
 use stm32f1xx_hal::pac::{RCC, USB};
 
 pub use stm32_usbd::UsbBus;
@@ -20,7 +20,7 @@ unsafe impl UsbPeripheral for Peripheral {
     const DP_PULL_UP_FEATURE: bool = false;
     const EP_MEMORY: *const () = 0x4000_6000 as _;
     const EP_MEMORY_SIZE: usize = 512;
-    const EP_MEMORY_ACCESS_2X16: bool = false;
+    type SramAccessScheme = U16Bits;
 
     fn enable() {
         let rcc = unsafe { &*RCC::ptr() };
