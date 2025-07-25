@@ -62,14 +62,17 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
         }
     }
 
+    /// # Safety
+    ///
+    /// Caller must ensure that while the returned reference exists, no mutable references to the section of EP memory covered by this slice exist.
     #[inline(always)]
-    fn get_mem_slice<T>(&self) -> &mut [VolatileCell<T>] {
-        unsafe { slice::from_raw_parts_mut(self.mem_ptr.cast(), self.mem_len) }
+    unsafe fn get_mem_slice<T>(&self) -> &[VolatileCell<T>] {
+        unsafe { slice::from_raw_parts(self.mem_ptr.cast(), self.mem_len) }
     }
 
     pub fn read(&self, mut buf: &mut [u8]) {
         if USB::EP_MEMORY_ACCESS == MemoryAccess::Word32x1 {
-            let mem = self.get_mem_slice::<u32>();
+            let mem = unsafe { self.get_mem_slice::<u32>() };
 
             let mut index = 0;
 
@@ -86,7 +89,7 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
                 buf.copy_from_slice(&value[0..buf.len()]);
             }
         } else {
-            let mem = self.get_mem_slice::<u16>();
+            let mem = unsafe { self.get_mem_slice::<u16>() };
 
             let mut index = 0;
 
@@ -107,7 +110,7 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
 
     pub fn write(&self, mut buf: &[u8]) {
         if USB::EP_MEMORY_ACCESS == MemoryAccess::Word32x1 {
-            let mem = self.get_mem_slice::<u32>();
+            let mem = unsafe { self.get_mem_slice::<u32>() };
 
             let mut index = 0;
 
@@ -115,7 +118,7 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
                 let mut value = [0; 4];
                 value.copy_from_slice(&buf[0..4]);
                 buf = &buf[4..];
-                
+
                 mem[index].set(u32::from_ne_bytes(value));
                 index += USB::EP_MEMORY_ACCESS.offset_multiplier();
             }
@@ -126,7 +129,7 @@ impl<USB: UsbPeripheral> EndpointBuffer<USB> {
                 mem[index].set(u32::from_ne_bytes(value));
             }
         } else {
-            let mem = self.get_mem_slice::<u16>();
+            let mem = unsafe { self.get_mem_slice::<u16>() };
 
             let mut index = 0;
 
