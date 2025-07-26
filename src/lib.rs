@@ -10,6 +10,7 @@ mod endpoint;
 mod endpoint_memory;
 mod registers;
 pub use crate::bus::UsbBus;
+pub use crate::endpoint_memory::MemoryAccess;
 
 mod pac;
 
@@ -31,9 +32,8 @@ pub unsafe trait UsbPeripheral: Send + Sync {
 
     /// Endpoint memory access scheme
     ///
-    /// Check Reference Manual for details.
-    /// Set to `true` if "2x16 bits/word" access scheme is used, otherwise set to `false`.
-    const EP_MEMORY_ACCESS_2X16: bool;
+    /// See `MemoryAccess` enum for more details. Check Reference Manual to determine the correct access scheme to use.
+    const EP_MEMORY_ACCESS: MemoryAccess;
 
     /// Enables USB device on its peripheral bus
     fn enable();
