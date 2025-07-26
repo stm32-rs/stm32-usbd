@@ -105,8 +105,10 @@ impl<USB: UsbPeripheral> UsbBus<USB> {
     /// wake up in other mode is invalid and host will most likely disable such a device.
     pub fn remote_wakeup(&self, resume: bool) {
         interrupt::free(|cs| {
-            self.regs.borrow(cs)
-                .cntr.modify(|r, w| w.resume().bit(resume && r.fsusp().is_suspend()));
+            self.regs
+                .borrow(cs)
+                .cntr
+                .modify(|r, w| w.resume().bit(resume && r.fsusp().is_suspend()));
         })
     }
 }
@@ -320,10 +322,7 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
 
     fn suspend(&self) {
         interrupt::free(|cs| {
-            self.regs
-                .borrow(cs)
-                .cntr
-                .modify(|_, w| w.fsusp().set_bit());
+            self.regs.borrow(cs).cntr.modify(|_, w| w.fsusp().set_bit());
         });
     }
 
