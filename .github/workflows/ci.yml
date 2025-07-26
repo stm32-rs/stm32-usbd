@@ -7,7 +7,7 @@ name: CI
 
 jobs:
   ci-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       matrix:
