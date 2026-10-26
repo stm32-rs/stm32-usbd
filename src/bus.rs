@@ -146,9 +146,7 @@ impl<USB: UsbPeripheral> usb_device::bus::UsbBus for UsbBus<USB> {
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
                 }
                 UsbDirection::In if !ep.is_in_buf_set() => {
-                    let size = (max_packet_size as usize + 1) & !0x01;
-
-                    let buffer = self.ep_allocator.allocate_buffer(size)?;
+                    let buffer = self.ep_allocator.allocate_buffer(max_packet_size as usize)?;
 
                     ep.set_in_buf(buffer);
 

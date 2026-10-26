@@ -50,7 +50,16 @@ pub struct EndpointBuffer<USB> {
 unsafe impl<USB> Send for EndpointBuffer<USB> {}
 
 impl<USB: UsbPeripheral> EndpointBuffer<USB> {
-    pub fn new(offset_bytes: usize, size_bytes: usize) -> Self {
+    /**
+     * Creates a new endpoint buffer for the given size and offset. This
+     * function is unsafe and may cause shared memory access or unaligned memory
+     *  - [`USB::EP_MEMORY`] must point to an unused memory block, that supports
+     * reads/writes using the memory access strategy defined in
+     * [`USB::EP_MEMORY_ACCESS`].
+     *  - [`offset_bytes`] must be aligned to the read/write unit size defined in [`USB::EP_MEMORY_ACCESS`].
+     *  - [`size_bytes`] must be a multiple of the read/write unit size defined in [`USB::EP_MEMORY_ACCESS`].
+     */
+    pub unsafe fn new(offset_bytes: usize, size_bytes: usize) -> Self {
         let mem_offset_bytes = offset_bytes * USB::EP_MEMORY_ACCESS.offset_multiplier();
         let mem_len = size_bytes * USB::EP_MEMORY_ACCESS.offset_multiplier() / USB::EP_MEMORY_ACCESS.unit_size();
 
@@ -245,18 +254,31 @@ impl<USB: UsbPeripheral> EndpointMemoryAllocator<USB> {
         }
     }
 
-    pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer<USB>> {
-        assert_eq!(size & 1, 0);
-        assert!(size < USB::EP_MEMORY_SIZE);
+    /**
+     * Allocates a memory buffer at [`USB::EP_MEMORY`], just right after the
+     * previously allocated buffer by this instance. The returned buffer is guaranteed to:
+     *  - Have at least a size of [`min_size`] bytes. The allocated buffer might be bigger
+     *    for aligning it to the read/write unit size.
+     *  - Be aligned to the read/write unit size.
+     */
+    pub fn allocate_buffer(&mut self, min_size: usize) -> Result<EndpointBuffer<USB>> {
+        let eff_size = min_size.div_ceil(USB::EP_MEMORY_ACCESS.unit_size()) * USB::EP_MEMORY_ACCESS.unit_size();
+        assert!(eff_size < USB::EP_MEMORY_SIZE);
 
         let offset = self.next_free_offset;
-        if offset as usize + size > USB::EP_MEMORY_SIZE {
+        if offset as usize + eff_size > USB::EP_MEMORY_SIZE {
             return Err(UsbError::EndpointMemoryOverflow);
         }
 
-        self.next_free_offset += size;
+        self.next_free_offset += eff_size;
 
-        Ok(EndpointBuffer::new(offset, size))
+
+        Ok(unsafe {
+            // SAFETY: Both eff_size and offset are aligned to the unit size of USB::EP_MEMORY_ACCESS.
+            // This call may still be unsafe if the EP_MEMORY address or the EP_MEMORY_ACCESS hasn't been
+            // set correctly.
+            EndpointBuffer::new(offset, eff_size)
+        })
     }
 
     pub fn buffer_descriptor(index: u8) -> BufferDescriptor<USB> {
